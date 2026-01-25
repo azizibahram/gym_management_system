@@ -1,5 +1,6 @@
-import { AttachMoney, CheckCircle, FitnessCenter, Groups, Inventory, NotificationsActive, People, PieChart as PieChartIcon, Schedule, TrendingUp, Warning } from '@mui/icons-material';
-import { Box, Card, CardContent, Chip, Container, Grid, LinearProgress, Paper, Table, TableBody, TableCell, TableRow, Typography, Avatar, Divider, Fade, Zoom } from '@mui/material';
+import { AttachMoney, CheckCircle, FitnessCenter, Groups, Inventory, NotificationsActive, Schedule, TrendingUp, Warning } from '@mui/icons-material';
+import { Box, Card, CardContent, Chip, Container, LinearProgress, Paper, Table, TableBody, TableCell, TableRow, Typography, Avatar, Fade, Zoom } from '@mui/material';
+import { Grid } from '@mui/system';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -41,9 +42,6 @@ interface StatsData {
   };
   alerts: AlertData[];
 }
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-const STATUS_COLORS = ['#4caf50', '#bdbdbd']; // Active (Green), Inactive (Grey)
 
 const Dashboard: React.FC = () => {
   const [data, setData] = useState<StatsData | null>(null);
@@ -264,7 +262,7 @@ const Dashboard: React.FC = () => {
                       background: 'rgba(255,255,255,0.95)',
                       backdropFilter: 'blur(10px)'
                     }}
-                    formatter={(value: number) => [`${value.toLocaleString()} AFN`, 'Revenue']}
+                    formatter={(value: number | undefined) => value ? [`${value.toLocaleString()} AFN`, 'Revenue'] : ['0 AFN', 'Revenue']}
                     labelStyle={{ color: '#666', fontWeight: 'bold' }}
                   />
                   <Area
@@ -415,7 +413,7 @@ const Dashboard: React.FC = () => {
                       background: 'rgba(255,255,255,0.95)',
                       backdropFilter: 'blur(10px)'
                     }}
-                    formatter={(value: number) => [`${value} athletes`, 'Count']}
+                    formatter={(value: number | undefined) => value ? [`${value} athletes`, 'Count'] : ['0 athletes', 'Count']}
                   />
                   <Legend
                     wrapperStyle={{ paddingTop: '20px' }}
@@ -471,7 +469,7 @@ const Dashboard: React.FC = () => {
                       background: 'rgba(255,255,255,0.95)',
                       backdropFilter: 'blur(10px)'
                     }}
-                    formatter={(value: number) => [`${value} athletes`, 'Count']}
+                    formatter={(value: number | undefined) => value ? [`${value} athletes`, 'Count'] : ['0 athletes', 'Count']}
                   />
                   <Bar
                     dataKey="value"
@@ -514,7 +512,7 @@ const Dashboard: React.FC = () => {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
                     stroke="#fff"
                     strokeWidth={2}
                   >
@@ -529,7 +527,7 @@ const Dashboard: React.FC = () => {
                       background: 'rgba(255,255,255,0.95)',
                       backdropFilter: 'blur(10px)'
                     }}
-                    formatter={(value: number) => [`${value} shelves`, 'Count']}
+                    formatter={(value: number | undefined) => value ? [`${value} shelves`, 'Count'] : ['0 shelves', 'Count']}
                   />
                 </PieChart>
               </ResponsiveContainer>
