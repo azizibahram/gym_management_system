@@ -1,5 +1,5 @@
 import { Dashboard, FitnessCenter, Logout, Storage } from '@mui/icons-material';
-import { AppBar, Box, Button, Container, Tab, Tabs, Toolbar, Typography } from '@mui/material';
+import { Box, Button, Container, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -10,16 +10,14 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [currentTab, setCurrentTab] = useState(location.pathname);
 
+  // initialise with a safe fallback
+  const [currentTab, setCurrentTab] = useState<string>(location.pathname ?? '/');
+
+  // update when the route changes
   useEffect(() => {
     setCurrentTab(location.pathname);
   }, [location.pathname]);
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
-    setCurrentTab(newValue);
-    navigate(newValue);
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -28,121 +26,192 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Top Navigation Bar */}
-      <AppBar
-        position="static"
-        elevation={0}
+      {/* inject keyframes for the navbar gradient animation */}
+      <style>{`
+        @keyframes navbarGradientShift {
+          0%   { background-position: 0% 0%; }
+          50%  { background-position: 100% 100%; }
+          100% { background-position: 0% 0%; }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* Floating Navigation Bar */}
+      <Box
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          position: 'fixed',
+          top: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1200,
+          width: 'calc(100% - 40px)',
+          maxWidth: '1200px',
         }}
       >
-        <Toolbar sx={{ minHeight: '70px !important' }}>
-          <FitnessCenter sx={{ fontSize: 36, mr: 2 }} />
-          <Typography variant="h5" sx={{ flexGrow: 0, fontWeight: 700, mr: 6 }}>
-            Energy Gym
-          </Typography>
+        {/* Navbar container – animated gradient background */}
+        <Box
+          sx={{
+            /* vibrant gradient – same style as the login page */
+            background: 'linear-gradient(135deg,  #381024,#5f2c82,#17418f,#0f0f3a)',
+            backgroundSize: '400% 400%',               // enable movement
+            animation: 'navbarGradientShift 12s ease infinite, slideDown 0.6s ease-out',
+            borderRadius: 4,
+            border: '1px solid rgba(255,255,255,0.2)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.05)',
+            px: 3,
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          {/* Logo Section – animated icon & gradient text */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
+            {/* animated circular logo */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 45,
+                height: 45,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #ff7e5f, #feb47b, #86a8e7, #7f7fd5)',
+                backgroundSize: '200% 200%',
+                animation: 'gradientShift 8s linear infinite, logoSpin 6s linear infinite',
+                mr: 2,
+                boxShadow: '0 4px 15px rgba(255,126,95,0.4)',
+              }}
+            >
+              <FitnessCenter sx={{ fontSize: 24, color: 'white' }} />
+            </Box>
 
-          <Tabs
-            value={currentTab}
-            onChange={handleTabChange}
-            textColor="inherit"
-            TabIndicatorProps={{
-              style: {
-                backgroundColor: '#fff',
-                height: 4,
-                borderRadius: '4px 4px 0 0'
-              }
-            }}
-            sx={{ flexGrow: 1 }}
-          >
-            <Tab
-              icon={<Dashboard />}
-              iconPosition="start"
-              label="Dashboard"
-              value="/"
+            {/* animated gradient text */}
+            <Typography
+              variant="h6"
               sx={{
-                color: 'rgba(255,255,255,0.7)',
-                '&.Mui-selected': { color: '#fff', fontWeight: 600 },
-                minHeight: 70,
-                textTransform: 'none',
-                fontSize: '16px',
-                px: 3
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #ff7e5f, #feb47b, #86a8e7, #7f7fd5)',
+                backgroundSize: '200% 200%',
+                animation: 'gradientShift 8s linear infinite',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 1px 2px rgba(0,0,0,0.6)',
               }}
-            />
-            <Tab
-              icon={<FitnessCenter />}
-              iconPosition="start"
-              label="Athletes"
-              value="/athletes"
-              sx={{
-                color: 'rgba(255,255,255,0.7)',
-                '&.Mui-selected': { color: '#fff', fontWeight: 600 },
-                minHeight: 70,
-                textTransform: 'none',
-                fontSize: '16px',
-                px: 3
-              }}
-            />
-            <Tab
-              icon={<Storage />}
-              iconPosition="start"
-              label="Shelves"
-              value="/shelves"
-              sx={{
-                color: 'rgba(255,255,255,0.7)',
-                '&.Mui-selected': { color: '#fff', fontWeight: 600 },
-                minHeight: 70,
-                textTransform: 'none',
-                fontSize: '16px',
-                px: 3
-              }}
-            />
-          </Tabs>
+            >
+              Energy Gym
+            </Typography>
+          </Box>
 
+          {/* Navigation Tabs */}
+          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                background: 'rgba(255, 255, 255, 0.08)',
+                borderRadius: 3,
+                p: 0.5,
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              {[
+                { icon: <Dashboard />, label: 'Dashboard', value: '/' },
+                { icon: <FitnessCenter />, label: 'Athletes', value: '/athletes' },
+                { icon: <Storage />, label: 'Shelves', value: '/shelves' },
+              ].map((tab) => (
+                <Button
+                  key={tab.value}
+                  onClick={() => navigate(tab.value)}   // direct navigation
+                  startIcon={tab.icon}
+                  sx={{
+                    color: currentTab === tab.value ? '#fff' : 'rgba(255,255,255,0.8)',
+                    background:
+                      currentTab === tab.value
+                        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)'
+                        : 'transparent',
+                    borderRadius: 2.5,
+                    px: 3,
+                    py: 1,
+                    mx: 0.5,
+                    textTransform: 'none',
+                    fontSize: '14px',
+                    fontWeight: currentTab === tab.value ? 600 : 500,
+                    minWidth: 'auto',
+                    boxShadow:
+                      currentTab === tab.value
+                        ? '0 4px 15px rgba(102, 126, 234, 0.4)'
+                        : 'none',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      background:
+                        currentTab === tab.value
+                          ? 'linear-gradient(135deg, #764ba2 0%, #f093fb 50%, #667eea 100%)'
+                          : 'rgba(255, 255, 255, 0.15)',
+                      color: '#fff',
+                      transform: 'translateY(-1px)',
+                    },
+                  }}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
+
+          {/* Logout Button */}
           <Button
-            color="inherit"
             onClick={handleLogout}
             startIcon={<Logout />}
             sx={{
+              color: 'rgba(255,255,255,0.9)',
               textTransform: 'none',
-              fontSize: '16px',
+              fontSize: '14px',
               px: 3,
               py: 1,
-              borderRadius: 2,
+              borderRadius: 2.5,
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: 'rgba(255, 255, 255, 0.08)',
+              transition: 'all 0.3s ease',
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.15)'
-              }
+                background: 'rgba(255, 255, 255, 0.15)',
+                color: '#fff',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                transform: 'translateY(-1px)',
+              },
             }}
           >
             Logout
           </Button>
-        </Toolbar>
-      </AppBar>
+        </Box>
+      </Box>
 
-      {/* Main Content */}
+      {/* Main Content with top padding for floating navbar */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          bgcolor: '#f5f7fa',
-          py: 4
+          background: '#f5f5f5',
+          pt: 12,
+          pb: 4,
+          minHeight: '100vh',
         }}
       >
-        <Container maxWidth="xl">
-          {children}
-        </Container>
+        <Container maxWidth="xl">{children}</Container>
       </Box>
 
-      {/* Footer */}
+      {/* Footer (unchanged) */}
       <Box
         component="footer"
         sx={{
           py: 2.5,
           px: 2,
           mt: 'auto',
-          backgroundColor: '#fff',
-          borderTop: '1px solid #e0e0e0'
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(10px)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.2)',
         }}
       >
         <Container maxWidth="xl">

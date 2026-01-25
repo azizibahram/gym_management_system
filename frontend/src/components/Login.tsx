@@ -2,7 +2,7 @@ import { FitnessCenter, Lock, Person, Visibility, VisibilityOff } from '@mui/ico
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import { Box, Button, Container, IconButton, InputAdornment, Link, TextField, Typography } from '@mui/material';
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react'; // ← added useMemo
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,17 +10,32 @@ const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');               // ← new error state
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // ---------- NEW: generate icon positions once (pure) ----------
+  const iconPositions = useMemo(() => {
+    return Array.from({ length: 6 }).map(() => ({
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+    }));
+  }, []);   // ← memoized, no impure calls during render
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');                                      // clear previous errors
     try {
       const response = await axios.post('http://localhost:8000/api/token/', { username, password });
       login(response.data.access);
       navigate('/');
-    } catch (error) {
-      alert('Invalid credentials');
+    } catch (err) {
+      // ← more user‑friendly error handling
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        setError('Invalid username or password.');
+      } else {
+        setError('Unable to connect to the server. Please try again later.');
+      }
     }
   };
 
@@ -28,7 +43,10 @@ const Login: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+        /* animated multi‑color gradient – now moves and shows several hues */
+        background: 'linear-gradient(135deg,   #804314,#ff512f,#8e2de2,#1a1a40)',
+        backgroundSize: '200% 200%',               // larger canvas for movement
+        animation: 'gradientShift 15s ease infinite',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -43,13 +61,58 @@ const Login: React.FC = () => {
           height: '100%',
           background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
           animation: 'float 20s ease-in-out infinite',
+          pointerEvents: 'none',
         },
         '@keyframes float': {
           '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
           '50%': { transform: 'translate(-20px, 20px) rotate(5deg)' },
         },
+        /* gradient animation – now shifts both axes */
+        '@keyframes gradientShift': {
+          '0%':   { backgroundPosition: '0% 0%' },
+          '50%':  { backgroundPosition: '100% 100%' },
+          '100%': { backgroundPosition: '0% 0%' },
+        },
+        /* logo animation */
+        '@keyframes logoSpin': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+
+        /* ---------- NEW: floating gym‑icon watermarks ---------- */
+        '@keyframes floatIcon': {
+          '0%': { transform: 'translate(0, 0) rotate(0deg)' },
+          '50%': { transform: 'translate(30px, -30px) rotate(180deg)' },
+          '100%': { transform: 'translate(0, 0) rotate(360deg)' },
+        },
       }}
     >
+      {/* NEW: container for background icons */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          zIndex: 0,
+        }}
+      >
+        {iconPositions.map((pos, i) => (
+          <FitnessCenter
+            key={i}
+            sx={{
+              position: 'absolute',
+              top: pos.top,          // ← use memoized values
+              left: pos.left,
+              fontSize: 120,
+              color: 'rgba(255,255,255,0.07)',
+              animation: `floatIcon 15s linear infinite`,
+              animationDelay: `${i * 2}s`,
+            }}
+          />
+        ))}
+      </Box>
+
       <Container maxWidth="sm">
         <Box
           sx={{
@@ -79,6 +142,7 @@ const Login: React.FC = () => {
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 mb: 2,
                 boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)',
+                animation: 'logoSpin 6s linear infinite',   // ← animated logo
               }}
             >
               <FitnessCenter sx={{ fontSize: 48, color: 'white' }} />
@@ -103,6 +167,12 @@ const Login: React.FC = () => {
 
           {/* Login Form */}
           <Box component="form" onSubmit={handleSubmit}>
+            {/* error message */}
+            {error && (
+              <Typography color="error" sx={{ mb: 2 }}>
+                {error}
+              </Typography>
+            )}
             <TextField
               margin="normal"
               required
@@ -120,12 +190,8 @@ const Login: React.FC = () => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  '&:hover fieldset': {
-                    borderColor: '#667eea',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#667eea',
-                  },
+                  '&:hover fieldset': { borderColor: '#667eea' },
+                  '&.Mui-focused fieldset': { borderColor: '#667eea' },
                 },
               }}
             />
@@ -159,12 +225,8 @@ const Login: React.FC = () => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  '&:hover fieldset': {
-                    borderColor: '#667eea',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#667eea',
-                  },
+                  '&:hover fieldset': { borderColor: '#667eea' },
+                  '&.Mui-focused fieldset': { borderColor: '#667eea' },
                 },
               }}
             />
@@ -177,17 +239,18 @@ const Login: React.FC = () => {
                 mb: 2,
                 py: 1.5,
                 borderRadius: 2,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                /* darker button gradient */
+                background: 'linear-gradient(135deg, #0f0c29, #302b63)',          // ← changed colors
                 fontSize: '16px',
                 fontWeight: 600,
                 textTransform: 'none',
-                boxShadow: '0 8px 20px rgba(102, 126, 234, 0.4)',
+                boxShadow: '0 8px 20px rgba(15,12,41,0.4)',                    // optional darker shadow
+                transition: 'all 0.3s ease',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                  boxShadow: '0 12px 30px rgba(102, 126, 234, 0.5)',
+                  background: 'linear-gradient(135deg, #24243e, #0f0c29)',      // ← changed hover colors
+                  boxShadow: '0 12px 30px rgba(36,36,62,0.5)',
                   transform: 'translateY(-2px)',
                 },
-                transition: 'all 0.3s ease',
               }}
             >
               Sign In
@@ -217,9 +280,7 @@ const Login: React.FC = () => {
                 rel="noopener noreferrer"
                 sx={{
                   color: '#0077b5',
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 119, 181, 0.1)',
-                  },
+                  '&:hover': { backgroundColor: 'rgba(0, 119, 181, 0.1)' },
                 }}
               >
                 <LinkedInIcon />
