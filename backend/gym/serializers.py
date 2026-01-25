@@ -1,0 +1,69 @@
+from rest_framework import serializers
+from .models import Athlete, Shelf, Payment
+from datetime import date, timedelta
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
+class AthleteSerializer(serializers.ModelSerializer):
+    days_left = serializers.ReadOnlyField()
+    fee_deadline_date = serializers.DateField(required=False)
+    final_fee = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    payments = PaymentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Athlete
+        fields = '__all__'
+
+    def create(self, validated_data):
+        # Calculate final fee
+        gym_type = validated_data.get('gym_type')
+        discount = validated_data.get('discount', 0)
+        if gym_type == 'fitness':
+            base_fee = 1000
+        else:
+            base_fee = 700
+        final_fee = base_fee - discount
+        
+        # Set auto-calculated fields
+        validated_data['final_fee'] = final_fee
+        
+        # Use provided fee_deadline_date or auto-calculate
+        if 'fee_deadline_date' not in validated_data:
+            validated_data['fee_deadline_date'] = date.today() + timedelta(days=30)
+        
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        # Recalculate final fee if gym_type or discount changed
+        gym_type = validated_data.get('gym_type', instance.gym_type)
+        discount = validated_data.get('discount', instance.discount)
+        
+        if gym_type == 'fitness':
+            base_fee = 1000
+        else:
+            base_fee = 700
+        final_fee = base_fee - discount
+        
+        validated_data['final_fee'] = final_fee
+        
+        # Keep existing fee_deadline_date unless it's a renewal (handled separately)
+        if 'fee_deadline_date' not in validated_data:
+            validated_data['fee_deadline_date'] = instance.fee_deadline_date
+        
+        return super().update(instance, validated_data)
+
+class ShelfSerializer(serializers.ModelSerializer):
+    athlete_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Shelf
+        fields = '__all__'
+    
+    def get_athlete_name(self, obj):
+        """Get the name of the assigned athlete"""
+        if obj.assigned_athlete:
+            return obj.assigned_athlete.full_name
+        return None
