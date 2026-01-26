@@ -1,5 +1,5 @@
-import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Storage, ToggleOff, ToggleOn, VerifiedUser } from '@mui/icons-material';
-import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Storage, ToggleOff, ToggleOn, VerifiedUser, Warning } from '@mui/icons-material';
+import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Fade, FormControl, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography, Zoom } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -74,7 +74,43 @@ const Athletes: React.FC = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileAthlete, setProfileAthlete] = useState<Athlete | null>(null);
 
+  const fetchAthletes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
 
+      if (searchQuery) params.append('search', searchQuery);
+      if (filterGymType) params.append('gym_type', filterGymType);
+      if (filterGymTime) params.append('gym_time', filterGymTime);
+      if (filterFeeStatus) params.append('fee_status', filterFeeStatus);
+
+      const response = await axios.get(`http://localhost:8000/api/athletes/?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAthletes(Array.isArray(response.data) ? response.data : (response.data.results || []));
+    } catch (error) {
+      console.error('Error fetching athletes:', error);
+      setAthletes([]);
+    }
+  };
+
+  const fetchShelves = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:8000/api/shelves/', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShelves(Array.isArray(response.data) ? response.data : (response.data.results || []));
+    } catch (error) {
+      console.error('Error fetching shelves:', error);
+      setShelves([]);
+    }
+  };
+
+  const openProfile = (athlete: Athlete) => {
+    setProfileAthlete(athlete);
+    setProfileOpen(true);
+  };
 
   useEffect(() => {
     fetchAthletes();
@@ -91,29 +127,6 @@ const Athletes: React.FC = () => {
       }
     }
   }, [location.state, athletes]);
-
-  const fetchAthletes = async () => {
-    const token = localStorage.getItem('token');
-    const params = new URLSearchParams();
-
-    if (searchQuery) params.append('search', searchQuery);
-    if (filterGymType) params.append('gym_type', filterGymType);
-    if (filterGymTime) params.append('gym_time', filterGymTime);
-    if (filterFeeStatus) params.append('fee_status', filterFeeStatus);
-
-    const response = await axios.get(`http://localhost:8000/api/athletes/?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setAthletes(response.data);
-  };
-
-  const fetchShelves = async () => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get('http://localhost:8000/api/shelves/', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setShelves(response.data);
-  };
 
   const calculateFee = (type: string, discount: number) => {
     const base = type === 'fitness' ? 1000 : 700;
@@ -159,11 +172,6 @@ const Athletes: React.FC = () => {
       toast.error('Failed to update athlete status. Please try again.');
       console.error('Error toggling status:', error);
     }
-  };
-
-  const openProfile = (athlete: Athlete) => {
-    setProfileAthlete(athlete);
-    setProfileOpen(true);
   };
 
   const handleReassignShelf = (athlete: Athlete) => {
@@ -315,39 +323,224 @@ const Athletes: React.FC = () => {
   };
 
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
-        Athletics Management
-        {(criticalCount > 0 || overdueCount > 0) && (
-          <span style={{ marginLeft: '16px' }}>
-            {criticalCount > 0 && (
-              <span style={{
-                backgroundColor: '#ff9800',
-                color: 'white',
-                padding: '4px 12px',
-                borderRadius: '12px',
-                fontSize: '14px',
-                marginRight: '8px'
-              }}>
-                {criticalCount} Critical
-              </span>
-            )}
-            {overdueCount > 0 && (
-              <span style={{
-                backgroundColor: '#f44336',
-                color: 'white',
-                padding: '4px 12px',
-                borderRadius: '12px',
-                fontSize: '14px'
-              }}>
-                {overdueCount} Overdue
-              </span>
-            )}
-          </span>
-        )}
-      </Typography>
+    <Box sx={{
+      minHeight: '100vh',
+      py: 4
+    }}>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+        {/* Header Section */}
+        <Box sx={{
+          textAlign: 'center',
+          mb: 6,
+          py: 3,
+          background: 'rgba(255, 255, 255, 0.8)',
+          borderRadius: 4,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 800,
+              background: 'linear-gradient(45deg, #1a237e 30%, #3949ab 90%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 2
+            }}
+          >
+            🏋️‍♂️ Athletics Management
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+            Manage your gym members and their information
+          </Typography>
+          <Chip
+            label={`Total Members: ${athletes.length}`}
+            color="primary"
+            variant="filled"
+            sx={{
+              fontSize: '1rem',
+              py: 1,
+              px: 2,
+              borderRadius: 3,
+              fontWeight: 'bold'
+            }}
+          />
+        </Box>
 
-      {/* Search and Filter Section */}
+        {/* KPI Cards */}
+        <Box sx={{ mb: 6 }}>
+          <Typography
+            variant="h5"
+            sx={{
+              textAlign: 'center',
+              mb: 4,
+              fontWeight: 700,
+              color: '#424242',
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -8,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 60,
+                height: 4,
+                background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                borderRadius: 2
+              }
+            }}
+          >
+            Member Statistics
+          </Typography>
+          <Box sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 4,
+            justifyContent: 'center',
+            alignItems: 'stretch'
+          }}>
+            <Box sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
+              <Zoom in={!!athletes} style={{ transitionDelay: '100ms' }}>
+                <Card sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  borderRadius: 4,
+                  boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)',
+                  transition: 'all 0.3s ease-in-out',
+                  cursor: 'pointer',
+                  minHeight: 180,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  '&:hover': {
+                    transform: 'translateY(-8px) scale(1.02)',
+                    boxShadow: '0 16px 48px rgba(102, 126, 234, 0.4)',
+                  }
+                }}>
+                  <CardContent sx={{ p: 4, textAlign: 'center', flex: 1 }}>
+                    <Avatar sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      width: 64,
+                      height: 64,
+                      mx: 'auto',
+                      mb: 2,
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+                    }}>
+                      <CheckCircle sx={{ fontSize: 32 }} />
+                    </Avatar>
+                    <Typography variant="h2" fontWeight="bold" sx={{ mb: 1, fontSize: '2.5rem' }}>
+                      {athletes.filter(a => a.is_active).length}
+                    </Typography>
+                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 1, fontWeight: 600 }}>
+                      Active Members
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      Currently active athletes
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Zoom>
+            </Box>
+
+            <Box sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
+              <Zoom in={!!athletes} style={{ transitionDelay: '200ms' }}>
+                <Card sx={{
+                  background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                  color: '#fff',
+                  borderRadius: 4,
+                  boxShadow: '0 8px 32px rgba(255, 154, 158, 0.3)',
+                  transition: 'all 0.3s ease-in-out',
+                  cursor: 'pointer',
+                  minHeight: 180,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  '&:hover': {
+                    transform: 'translateY(-8px) scale(1.02)',
+                    boxShadow: '0 16px 48px rgba(255, 154, 158, 0.4)',
+                  }
+                }}>
+                  <CardContent sx={{ p: 4, textAlign: 'center', flex: 1 }}>
+                    <Avatar sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      width: 64,
+                      height: 64,
+                      mx: 'auto',
+                      mb: 2,
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+                    }}>
+                      <Warning sx={{ fontSize: 32 }} />
+                    </Avatar>
+                    <Typography variant="h2" fontWeight="bold" sx={{ mb: 1, fontSize: '2.5rem' }}>
+                      {criticalCount}
+                    </Typography>
+                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 1, fontWeight: 600 }}>
+                      Critical Alerts
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      Members needing attention
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Zoom>
+            </Box>
+
+            <Box sx={{ flex: '1 1 300px', maxWidth: '400px' }}>
+              <Zoom in={!!athletes} style={{ transitionDelay: '300ms' }}>
+                <Card sx={{
+                  background: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)',
+                  color: 'white',
+                  borderRadius: 4,
+                  boxShadow: '0 8px 32px rgba(255, 8, 68, 0.3)',
+                  transition: 'all 0.3s ease-in-out',
+                  cursor: 'pointer',
+                  minHeight: 180,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  '&:hover': {
+                    transform: 'translateY(-8px) scale(1.02)',
+                    boxShadow: '0 16px 48px rgba(255, 8, 68, 0.4)',
+                  }
+                }}>
+                  <CardContent sx={{ p: 4, textAlign: 'center', flex: 1 }}>
+                    <Avatar sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      width: 64,
+                      height: 64,
+                      mx: 'auto',
+                      mb: 2,
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+                    }}>
+                      <Cancel sx={{ fontSize: 32 }} />
+                    </Avatar>
+                    <Typography variant="h2" fontWeight="bold" sx={{ mb: 1, fontSize: '2.5rem' }}>
+                      {overdueCount}
+                    </Typography>
+                    <Typography variant="h6" sx={{ opacity: 0.9, mb: 1, fontWeight: 600 }}>
+                      Overdue Members
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      Members with expired fees
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Zoom>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Search and Filter Section */}
+        <Fade in={!!athletes} timeout={1000}>
+          <Paper sx={{
+            p: 4,
+            mb: 4,
+            borderRadius: 4,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+            border: '1px solid #e9ecef'
+          }}>
       <Paper sx={{ p: 2, mb: 2 }}>
         <TextField
           label="Search athletes..."
@@ -680,7 +873,7 @@ const Athletes: React.FC = () => {
                   }
                 >
                   <MenuItem value=""><em>None</em></MenuItem>
-                  {shelves.filter(s => s.status === 'available' || s.id.toString() === form.shelf).map(shelf => (
+                  {shelves && Array.isArray(shelves) && shelves.filter(s => s.status === 'available' || s.id.toString() === form.shelf).map(shelf => (
                     <MenuItem key={shelf.id} value={String(shelf.id)}>{shelf.shelf_number}</MenuItem>
                   ))}
                 </Select>
@@ -931,7 +1124,10 @@ const Athletes: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+          </Paper>
+        </Fade>
+      </Container>
+    </Box>
   );
 };
 
