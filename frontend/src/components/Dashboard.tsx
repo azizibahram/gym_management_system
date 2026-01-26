@@ -21,6 +21,7 @@ interface AlertData {
   days_left: number;
   gym_type: string;
   contact_number: string;
+  photo: string | null;
 }
 
 interface StatsData {
@@ -519,15 +520,18 @@ const Dashboard: React.FC = () => {
                               }}>
                                 <TableCell sx={{ py: 2.5 }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Avatar sx={{
-                                      width: 40,
-                                      height: 40,
-                                      mr: 2,
-                                      bgcolor: 'error.main',
-                                      fontSize: '1rem',
-                                      fontWeight: 'bold'
-                                    }}>
-                                      {alert.full_name.charAt(0).toUpperCase()}
+                                    <Avatar
+                                      src={alert.photo ? `http://localhost:8000${alert.photo}` : undefined}
+                                      sx={{
+                                        width: 40,
+                                        height: 40,
+                                        mr: 2,
+                                        bgcolor: alert.photo ? 'transparent' : 'error.main',
+                                        fontSize: '1rem',
+                                        fontWeight: 'bold'
+                                      }}
+                                    >
+                                      {!alert.photo && alert.full_name.charAt(0).toUpperCase()}
                                     </Avatar>
                                     <Box>
                                       <Typography fontWeight="bold" variant="body1" sx={{ mb: 0.5 }}>

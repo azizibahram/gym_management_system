@@ -85,6 +85,13 @@ const theme = createTheme({
                 },
             },
         },
+        MuiCssBaseline: {
+            styleOverrides: {
+                '@global': {
+                    '@import': [],
+                },
+            },
+        },
         MuiTableRow: {
             styleOverrides: {
                 root: {

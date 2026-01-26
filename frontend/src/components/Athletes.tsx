@@ -77,6 +77,7 @@ const Athletes: React.FC = () => {
   const [renewDuration, setRenewDuration] = useState(30);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileAthlete, setProfileAthlete] = useState<Athlete | null>(null);
+  const [hasOpenedProfile, setHasOpenedProfile] = useState(false);
 
   const fetchAthletes = async () => {
     try {
@@ -124,13 +125,16 @@ const Athletes: React.FC = () => {
   // Check for profile to open from navigation state
   useEffect(() => {
     const openProfileId = location.state?.openProfileId;
-    if (openProfileId && athletes.length > 0) {
+    if (openProfileId && athletes.length > 0 && !hasOpenedProfile) {
       const athlete = athletes.find(a => a.id === openProfileId);
       if (athlete) {
         openProfile(athlete);
+        setHasOpenedProfile(true);
+        // Clear the state to prevent re-opening on data updates
+        window.history.replaceState({}, document.title);
       }
     }
-  }, [location.state, athletes]);
+  }, [location.state, athletes, hasOpenedProfile]);
 
   const calculateFee = (type: string, discount: number) => {
     const base = type === 'fitness' ? 1000 : 700;
@@ -712,8 +716,16 @@ const Athletes: React.FC = () => {
                 <TableCell style={{
                   color: getColor(athlete.days_left),
                   fontWeight: 'bold'
-                }}>
-                  {athlete.days_left} days
+                }}><Box component="span" sx={{
+                      px: 1, py: 0.5,
+                      bgcolor: '#e3f2fd',
+                      borderRadius: 1,
+                      fontSize: '0.875rem',
+                      fontWeight: 500
+                    }}>
+                       {athlete.days_left} days
+                    </Box>
+                 
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>

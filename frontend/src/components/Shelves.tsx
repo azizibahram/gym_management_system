@@ -402,10 +402,18 @@ const Shelves: React.FC = () => {
                 <TableCell>{shelf.shelf_number}</TableCell>
                 <TableCell>
                   <span style={{
-                    color: shelf.status === 'available' ? '#4caf50' : '#ff9800',
+                    color: shelf.status === 'available' ? '#4caf50' : '#ff0000',
                     fontWeight: 'bold'
-                  }}>
-                    {shelf.status}
+                  }}><Box component="span" sx={{
+                                        px: 1, py: 0.5,
+                                        bgcolor: '#edf0f3',
+                                        borderRadius: 1,
+                                        fontSize: '0.875rem',
+                                        fontWeight: 500
+                                      }}>
+                                         {shelf.status}
+                                      </Box>
+                    
                   </span>
                 </TableCell>
                 <TableCell>{shelf.athlete_name || '-'}</TableCell>
