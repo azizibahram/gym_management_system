@@ -1,7 +1,7 @@
-import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Storage, ToggleOff, ToggleOn, VerifiedUser, Warning } from '@mui/icons-material';
+import { AccessTime, AccountBox, Add, ArrowDownward, ArrowUpward, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Storage, ToggleOff, ToggleOn, VerifiedUser, Warning } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Fade, FormControl, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography, Zoom } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import PhotoUploader from './PhotoUploader';
@@ -66,6 +66,10 @@ const Athletes: React.FC = () => {
   const [filterGymType, setFilterGymType] = useState('');
   const [filterGymTime, setFilterGymTime] = useState('');
   const [filterFeeStatus, setFilterFeeStatus] = useState('');
+
+  // Sorting states
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Renewal & Profile State
   const [renewOpen, setRenewOpen] = useState(false);
@@ -221,6 +225,59 @@ const Athletes: React.FC = () => {
     setFilterGymTime('');
     setFilterFeeStatus('');
   };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />;
+  };
+
+  const sortedAthletes = useMemo<Athlete[]>(() => {
+    return [...athletes].sort((a, b) => {
+      let aVal: any, bVal: any;
+      switch (sortField) {
+        case 'fullName':
+          aVal = a.full_name;
+          bVal = b.full_name;
+          return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        case 'gymType':
+          aVal = a.gym_type;
+          bVal = b.gym_type;
+          return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        case 'gymTime':
+          aVal = a.gym_time;
+          bVal = b.gym_time;
+          return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        case 'regDate':
+          aVal = new Date(a.registration_date);
+          bVal = new Date(b.registration_date);
+          return sortDirection === 'asc' ? aVal.getTime() - bVal.getTime() : bVal.getTime() - aVal.getTime();
+        case 'feeDeadline':
+          aVal = new Date(a.fee_deadline_date);
+          bVal = new Date(b.fee_deadline_date);
+          return sortDirection === 'asc' ? aVal.getTime() - bVal.getTime() : bVal.getTime() - aVal.getTime();
+        case 'daysLeft':
+          aVal = a.days_left;
+          bVal = b.days_left;
+          return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+        case 'shelf':
+          if (a.shelf === null && b.shelf === null) return 0;
+          if (a.shelf === null) return sortDirection === 'asc' ? 1 : -1;
+          if (b.shelf === null) return sortDirection === 'asc' ? -1 : 1;
+          return sortDirection === 'asc' ? a.shelf - b.shelf : b.shelf - a.shelf;
+        default:
+          return 0;
+      }
+    });
+  }, [athletes, sortField, sortDirection]);
 
   const activeFiltersCount = [filterGymType, filterGymTime, filterFeeStatus].filter(f => f).length;
 
@@ -604,18 +661,18 @@ const Athletes: React.FC = () => {
           <TableHead>
             <TableRow>
               <TableCell>Photo</TableCell>
-              <TableCell>Full Name</TableCell>
-              <TableCell>Gym Type</TableCell>
-              <TableCell>Gym Time</TableCell>
-              <TableCell>Shelf</TableCell>
-              <TableCell>Reg Date</TableCell>
-              <TableCell>Fee Deadline</TableCell>
-              <TableCell>Days Left</TableCell>
+              <TableCell onClick={() => handleSort('fullName')} sx={{ cursor: 'pointer' }}>Full Name {getSortIcon('fullName')}</TableCell>
+              <TableCell onClick={() => handleSort('gymType')} sx={{ cursor: 'pointer' }}>Gym Type {getSortIcon('gymType')}</TableCell>
+              <TableCell onClick={() => handleSort('gymTime')} sx={{ cursor: 'pointer' }}>Gym Time {getSortIcon('gymTime')}</TableCell>
+              <TableCell onClick={() => handleSort('shelf')} sx={{ cursor: 'pointer' }}>Shelf {getSortIcon('shelf')}</TableCell>
+              <TableCell onClick={() => handleSort('regDate')} sx={{ cursor: 'pointer' }}>Reg Date {getSortIcon('regDate')}</TableCell>
+              <TableCell onClick={() => handleSort('feeDeadline')} sx={{ cursor: 'pointer' }}>Fee Deadline {getSortIcon('feeDeadline')}</TableCell>
+              <TableCell onClick={() => handleSort('daysLeft')} sx={{ cursor: 'pointer' }}>Days Left {getSortIcon('daysLeft')}</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {athletes.map((athlete) => (
+            {sortedAthletes.map((athlete) => (
               <TableRow
                 key={athlete.id}
                 hover

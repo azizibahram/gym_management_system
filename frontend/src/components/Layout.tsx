@@ -1,9 +1,9 @@
 import { Dashboard, FitnessCenter, Logout, Notifications, Storage } from '@mui/icons-material';
-import { Avatar, Badge, Box, Button, Container, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import { Avatar, Badge, Box, Button, Container, IconButton, Link, Menu, MenuItem, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -327,8 +327,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         <Container maxWidth="xl">
           <Typography variant="body2" color="text.secondary" align="center">
-            © 2026 Energy Gym Management System - All Rights Reserved
+            © 2026 Energy Gym Management System - All Rights Reserved 
           </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              <Typography variant="body1" sx={{ fontWeight: 600, color: '#667eea' }}>
+                Bahram Azizi
+              </Typography>
+              <IconButton
+                component={Link}
+                href="https://www.linkedin.com/in/bahramazizi1996"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: '#0077b5',
+                  '&:hover': { backgroundColor: 'rgba(0, 119, 181, 0.1)' },
+                }}
+              >
+                <LinkedInIcon />
+              </IconButton>
+            </Box>
         </Container>
       </Box>
     </Box>

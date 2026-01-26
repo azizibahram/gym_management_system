@@ -1,4 +1,4 @@
-import { Add, Delete, Edit, Inventory, Storage } from '@mui/icons-material';
+import { Add, ArrowDownward, ArrowUpward, Delete, Edit, Inventory, Storage } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Fade, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Zoom } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
@@ -17,6 +17,9 @@ const Shelves: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Shelf | null>(null);
   const [shelfNumber, setShelfNumber] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const fetchShelves = async () => {
     try {
@@ -91,9 +94,49 @@ const Shelves: React.FC = () => {
     }
   };
 
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   const totalShelves = shelves.length;
   const availableShelves = Array.isArray(shelves) ? shelves.filter(s => s.status === 'available').length : 0;
   const assignedShelves = Array.isArray(shelves) ? shelves.filter(s => s.status === 'assigned').length : 0;
+
+  const filteredShelves = shelves.filter(shelf =>
+
+    shelf.shelf_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+
+    (shelf.athlete_name && shelf.athlete_name.toLowerCase().includes(searchTerm.toLowerCase()))
+
+  );
+
+  const sortedShelves = [...filteredShelves].sort((a, b) => {
+    let aVal, bVal;
+    if (sortField === 'shelf_number') {
+      const aNum = parseInt(a.shelf_number.replace(/\D/g, '')) || 0;
+      const bNum = parseInt(b.shelf_number.replace(/\D/g, '')) || 0;
+      aVal = aNum;
+      bVal = bNum;
+    } else if (sortField === 'status') {
+      aVal = a.status;
+      bVal = b.status;
+    } else if (sortField === 'assigned_athlete') {
+      aVal = a.athlete_name || '';
+      bVal = b.athlete_name || '';
+    } else {
+      return 0;
+    }
+    if (sortDirection === 'asc') {
+      return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+    } else {
+      return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+    }
+  });
 
   return (
     <Box sx={{
@@ -314,6 +357,13 @@ const Shelves: React.FC = () => {
             border: '1px solid #e9ecef'
           }}>
             <Box sx={{ mb: 3 }}>
+              <TextField
+                label="Search Shelves"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
               <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()} sx={{
                 background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
                 borderRadius: 3,
@@ -334,14 +384,20 @@ const Shelves: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Shelf Number</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Assigned Athlete</TableCell>
+              <TableCell onClick={() => handleSort('shelf_number')} style={{ cursor: 'pointer' }}>
+                Shelf Number {sortField === 'shelf_number' && (sortDirection === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+              </TableCell>
+              <TableCell onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
+                Status {sortField === 'status' && (sortDirection === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+              </TableCell>
+              <TableCell onClick={() => handleSort('assigned_athlete')} style={{ cursor: 'pointer' }}>
+                Assigned Athlete {sortField === 'assigned_athlete' && (sortDirection === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+              </TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {shelves.map((shelf) => (
+            {sortedShelves.map((shelf) => (
               <TableRow key={shelf.id} hover>
                 <TableCell>{shelf.shelf_number}</TableCell>
                 <TableCell>
