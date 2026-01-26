@@ -165,13 +165,13 @@ const Shelves: React.FC = () => {
               mb: 2
             }}
           >
-            🏋️‍♂️ Shelf Management
+            🏋️‍♂️ Locker Management
           </Typography>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
             Manage your gym equipment storage
           </Typography>
           <Chip
-            label={`Total Shelves: ${totalShelves}`}
+            label={`Total Lockers: ${totalShelves}`}
             color="primary"
             variant="filled"
             sx={{
@@ -207,7 +207,7 @@ const Shelves: React.FC = () => {
               }
             }}
           >
-            Shelf Statistics
+            Locker Statistics
           </Typography>
           <Box sx={{
             display: 'flex',
@@ -249,7 +249,7 @@ const Shelves: React.FC = () => {
                       {totalShelves}
                     </Typography>
                     <Typography variant="h6" sx={{ opacity: 0.9, mb: 1, fontWeight: 600 }}>
-                      Total Shelves
+                      Total Lockers
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8 }}>
                       All storage units in the system
@@ -292,7 +292,7 @@ const Shelves: React.FC = () => {
                       {availableShelves}
                     </Typography>
                     <Typography variant="h6" sx={{ opacity: 0.9, mb: 1, fontWeight: 600 }}>
-                      Available Shelves
+                      Available Lockers
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8 }}>
                       Ready for equipment storage
@@ -335,7 +335,7 @@ const Shelves: React.FC = () => {
                       {assignedShelves}
                     </Typography>
                     <Typography variant="h6" sx={{ opacity: 0.9, mb: 1, fontWeight: 600 }}>
-                      Assigned Shelves
+                      Assigned Lockers
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8 }}>
                       Currently in use by members
@@ -358,7 +358,7 @@ const Shelves: React.FC = () => {
           }}>
             <Box sx={{ mb: 3 }}>
               <TextField
-                label="Search Shelves"
+                label="Search Lockers"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 fullWidth
@@ -377,7 +377,7 @@ const Shelves: React.FC = () => {
                   boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
                 }
               }}>
-                Create New Shelf
+                Create New Locker
               </Button>
             </Box>
       <TableContainer component={Paper}>
@@ -385,7 +385,7 @@ const Shelves: React.FC = () => {
           <TableHead>
             <TableRow>
               <TableCell onClick={() => handleSort('shelf_number')} style={{ cursor: 'pointer' }}>
-                Shelf Number {sortField === 'shelf_number' && (sortDirection === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
+                Locker Number {sortField === 'shelf_number' && (sortDirection === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
               </TableCell>
               <TableCell onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>
                 Status {sortField === 'status' && (sortDirection === 'asc' ? <ArrowUpward fontSize="small" /> : <ArrowDownward fontSize="small" />)}
@@ -419,9 +419,9 @@ const Shelves: React.FC = () => {
         </Table>
       </TableContainer>
       <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{editing ? 'Edit Shelf' : 'Create Shelf'}</DialogTitle>
+        <DialogTitle>{editing ? 'Edit Locker' : 'Create Locker'}</DialogTitle>
         <DialogContent>
-          <TextField label="Shelf Number" value={shelfNumber} onChange={(e) => setShelfNumber(e.target.value)} fullWidth margin="normal" required />
+          <TextField label="Locker Number" value={shelfNumber} onChange={(e) => setShelfNumber(e.target.value)} fullWidth margin="normal" required />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>

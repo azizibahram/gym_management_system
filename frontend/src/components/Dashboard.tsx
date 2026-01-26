@@ -830,7 +830,7 @@ const Dashboard: React.FC = () => {
                     </Avatar>
                     <Box sx={{ textAlign: 'center' }}>
                       <Typography variant="h6" fontWeight="bold" color="success.main">
-                        Shelf Management
+                        Locker Management
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Storage utilization status

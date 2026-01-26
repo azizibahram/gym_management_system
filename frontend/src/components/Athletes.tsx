@@ -664,7 +664,7 @@ const Athletes: React.FC = () => {
               <TableCell onClick={() => handleSort('fullName')} sx={{ cursor: 'pointer' }}>Full Name {getSortIcon('fullName')}</TableCell>
               <TableCell onClick={() => handleSort('gymType')} sx={{ cursor: 'pointer' }}>Gym Type {getSortIcon('gymType')}</TableCell>
               <TableCell onClick={() => handleSort('gymTime')} sx={{ cursor: 'pointer' }}>Gym Time {getSortIcon('gymTime')}</TableCell>
-              <TableCell onClick={() => handleSort('shelf')} sx={{ cursor: 'pointer' }}>Shelf {getSortIcon('shelf')}</TableCell>
+              <TableCell onClick={() => handleSort('shelf')} sx={{ cursor: 'pointer' }}>Locker {getSortIcon('shelf')}</TableCell>
               <TableCell onClick={() => handleSort('regDate')} sx={{ cursor: 'pointer' }}>Reg Date {getSortIcon('regDate')}</TableCell>
               <TableCell onClick={() => handleSort('feeDeadline')} sx={{ cursor: 'pointer' }}>Fee Deadline {getSortIcon('feeDeadline')}</TableCell>
               <TableCell onClick={() => handleSort('daysLeft')} sx={{ cursor: 'pointer' }}>Days Left {getSortIcon('daysLeft')}</TableCell>
@@ -701,7 +701,7 @@ const Athletes: React.FC = () => {
                       fontSize: '0.875rem',
                       fontWeight: 500
                     }}>
-                      Shelf {shelves.find(s => s.id === Number(athlete.shelf))?.shelf_number || athlete.shelf}
+                      {shelves.find(s => s.id === Number(athlete.shelf))?.shelf_number || athlete.shelf}
                     </Box>
                   ) : (
                     <span style={{ color: '#9e9e9e' }}>-</span>
@@ -732,7 +732,7 @@ const Athletes: React.FC = () => {
                         <CreditCard />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Reassign Shelf">
+                    <Tooltip title="Reassign Locker">
                       <IconButton size="small" color="info" onClick={(e) => { e.stopPropagation(); handleReassignShelf(athlete); }}>
                         <Storage />
                       </IconButton>
