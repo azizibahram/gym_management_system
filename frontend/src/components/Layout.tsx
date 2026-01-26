@@ -1,9 +1,10 @@
-import { Dashboard, FitnessCenter, Logout, Notifications, Storage } from '@mui/icons-material';
+import { Dashboard, FitnessCenter, Logout, Notifications, Storage, VpnKey } from '@mui/icons-material';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import { Avatar, Badge, Box, Button, Container, IconButton, Link, Menu, MenuItem, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import ChangePassword from './ChangePassword';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -24,6 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const currentTab = location.pathname;
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [notificationsAnchor, setNotificationsAnchor] = useState<null | HTMLElement>(null);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // fetch alerts
   const fetchAlerts = async () => {
@@ -220,6 +222,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </IconButton>
           {/* Debug: {alerts.length} */}
 
+          {/* Change Password Button */}
+          <IconButton
+            onClick={() => setChangePasswordOpen(true)}
+            sx={{
+              color: 'rgba(255,255,255,0.9)',
+              mr: 1,
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <VpnKey />
+          </IconButton>
+
           {/* Logout Button */}
           <Button
             onClick={handleLogout}
@@ -348,6 +366,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Box>
         </Container>
       </Box>
+
+      {/* Change Password Dialog */}
+      <ChangePassword
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </Box>
   );
 };

@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from gym.views import AthleteViewSet, ShelfViewSet, DashboardStatsView
+from gym.views import AthleteViewSet, ShelfViewSet, DashboardStatsView, ChangePasswordView
 
 router = DefaultRouter()
 router.register(r'athletes', AthleteViewSet)
@@ -31,6 +31,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('api/', include(router.urls)),
     path('api/dashboard/', DashboardStatsView.as_view(), name='dashboard'),
+    path('api/change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
