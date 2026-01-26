@@ -2,6 +2,7 @@ import { Add, Delete, Edit } from '@mui/icons-material';
 import { Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface Shelf {
   id: number;
@@ -47,26 +48,39 @@ const Shelves: React.FC = () => {
 
   const handleSubmit = async () => {
     const token = localStorage.getItem('token');
-    if (editing) {
-      await axios.put(`http://localhost:8000/api/shelves/${editing.id}/`, { shelf_number: shelfNumber }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-    } else {
-      await axios.post('http://localhost:8000/api/shelves/', { shelf_number: shelfNumber }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    try {
+      if (editing) {
+        await axios.put(`http://localhost:8000/api/shelves/${editing.id}/`, { shelf_number: shelfNumber }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success(`Shelf "${shelfNumber}" updated successfully!`);
+      } else {
+        await axios.post('http://localhost:8000/api/shelves/', { shelf_number: shelfNumber }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success(`Shelf "${shelfNumber}" created successfully!`);
+      }
+      handleClose();
+      fetchShelves();
+    } catch (error) {
+      toast.error('Failed to save shelf. Please try again.');
+      console.error('Error saving shelf:', error);
     }
-    handleClose();
-    fetchShelves();
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure?')) {
+    if (window.confirm('Are you sure you want to delete this shelf?')) {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/shelves/${id}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchShelves();
+      try {
+        await axios.delete(`http://localhost:8000/api/shelves/${id}/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Shelf deleted successfully!');
+        fetchShelves();
+      } catch (error) {
+        toast.error('Failed to delete shelf. Please try again.');
+        console.error('Error deleting shelf:', error);
+      }
     }
   };
 

@@ -27,7 +27,7 @@ const Login: React.FC = () => {
     setError('');                                      // clear previous errors
     try {
       const response = await axios.post('http://localhost:8000/api/token/', { username, password });
-      login(response.data.access);
+      login(response.data.access, response.data.refresh);
       navigate('/');
     } catch (err) {
       // ← more user‑friendly error handling

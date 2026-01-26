@@ -2,6 +2,7 @@ import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckC
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import PhotoUploader from './PhotoUploader';
 
@@ -129,22 +130,35 @@ const Athletes: React.FC = () => {
   const submitRenew = async () => {
     if (!renewAthlete) return;
     const token = localStorage.getItem('token');
-    await axios.post(`http://localhost:8000/api/athletes/${renewAthlete.id}/renew/`, {
-      duration: renewDuration
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    try {
+      await axios.post(`http://localhost:8000/api/athletes/${renewAthlete.id}/renew/`, {
+        duration: renewDuration
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-    setRenewOpen(false);
-    fetchAthletes();
+      toast.success(`Membership renewed for "${renewAthlete.full_name}" (${renewDuration} days)!`);
+      setRenewOpen(false);
+      fetchAthletes();
+    } catch (error) {
+      toast.error('Failed to renew membership. Please try again.');
+      console.error('Error renewing membership:', error);
+    }
   };
 
   const handleToggleStatus = async (athlete: Athlete) => {
     const token = localStorage.getItem('token');
-    await axios.post(`http://localhost:8000/api/athletes/${athlete.id}/toggle_status/`, {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    fetchAthletes();
+    try {
+      await axios.post(`http://localhost:8000/api/athletes/${athlete.id}/toggle_status/`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const newStatus = athlete.is_active ? 'deactivated' : 'activated';
+      toast.success(`Athlete "${athlete.full_name}" ${newStatus} successfully!`);
+      fetchAthletes();
+    } catch (error) {
+      toast.error('Failed to update athlete status. Please try again.');
+      console.error('Error toggling status:', error);
+    }
   };
 
   const openProfile = (athlete: Athlete) => {
@@ -177,14 +191,20 @@ const Athletes: React.FC = () => {
       data.append('shelf', newShelfId);
     }
 
-    await axios.put(`http://localhost:8000/api/athletes/${reassignAthlete.id}/`, data, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    try {
+      await axios.put(`http://localhost:8000/api/athletes/${reassignAthlete.id}/`, data, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-    setReassignOpen(false);
-    setReassignAthlete(null);
-    fetchAthletes();
-    fetchShelves();
+      toast.success(`Shelf reassigned for "${reassignAthlete.full_name}" successfully!`);
+      setReassignOpen(false);
+      setReassignAthlete(null);
+      fetchAthletes();
+      fetchShelves();
+    } catch (error) {
+      toast.error('Failed to reassign shelf. Please try again.');
+      console.error('Error reassigning shelf:', error);
+    }
   };
 
   const clearFilters = () => {
@@ -252,26 +272,39 @@ const Athletes: React.FC = () => {
     if (form.shelf) data.append('shelf', form.shelf);
     if (form.fee_deadline_date) data.append('fee_deadline_date', form.fee_deadline_date);
 
-    if (editing) {
-      await axios.put(`http://localhost:8000/api/athletes/${editing.id}/`, data, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-    } else {
-      await axios.post('http://localhost:8000/api/athletes/', data, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    try {
+      if (editing) {
+        await axios.put(`http://localhost:8000/api/athletes/${editing.id}/`, data, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success(`Athlete "${form.full_name}" updated successfully!`);
+      } else {
+        await axios.post('http://localhost:8000/api/athletes/', data, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success(`Athlete "${form.full_name}" registered successfully!`);
+      }
+      handleClose();
+      fetchAthletes();
+    } catch (error) {
+      toast.error('Failed to save athlete. Please try again.');
+      console.error('Error saving athlete:', error);
     }
-    handleClose();
-    fetchAthletes();
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure?')) {
+    if (window.confirm('Are you sure you want to delete this athlete?')) {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/athletes/${id}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchAthletes();
+      try {
+        await axios.delete(`http://localhost:8000/api/athletes/${id}/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Athlete deleted successfully!');
+        fetchAthletes();
+      } catch (error) {
+        toast.error('Failed to delete athlete. Please try again.');
+        console.error('Error deleting athlete:', error);
+      }
     }
   };
 
@@ -810,6 +843,12 @@ const Athletes: React.FC = () => {
                         />
                       </Box>
                     </Box>
+                    {profileAthlete.notes && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="caption" color="text.secondary">Notes</Typography>
+                        <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: 'pre-wrap' }}>{profileAthlete.notes}</Typography>
+                      </Box>
+                    )}
                   </CardContent>
                 </Card>
 
