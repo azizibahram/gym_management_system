@@ -3,6 +3,7 @@ import { Avatar, Box, Card, CardContent, Chip, Container, Fade, LinearProgress, 
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useAlerts } from '../context/AlertsContext';
 
 interface TrendData {
   name: string;
@@ -44,6 +45,7 @@ interface StatsData {
 
 const Dashboard: React.FC = () => {
   const [data, setData] = useState<StatsData | null>(null);
+  const { setAlerts } = useAlerts();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -54,6 +56,7 @@ const Dashboard: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setData(response.data);
+        setAlerts(response.data.alerts);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       }

@@ -2,6 +2,7 @@ import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckC
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import PhotoUploader from './PhotoUploader';
 
 interface Payment {
@@ -38,6 +39,7 @@ interface Shelf {
 }
 
 const Athletes: React.FC = () => {
+  const location = useLocation();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [open, setOpen] = useState(false);
@@ -77,6 +79,17 @@ const Athletes: React.FC = () => {
     fetchAthletes();
     fetchShelves();
   }, [searchQuery, filterGymType, filterGymTime, filterFeeStatus]);
+
+  // Check for profile to open from navigation state
+  useEffect(() => {
+    const openProfileId = location.state?.openProfileId;
+    if (openProfileId && athletes.length > 0) {
+      const athlete = athletes.find(a => a.id === openProfileId);
+      if (athlete) {
+        openProfile(athlete);
+      }
+    }
+  }, [location.state, athletes]);
 
   const fetchAthletes = async () => {
     const token = localStorage.getItem('token');

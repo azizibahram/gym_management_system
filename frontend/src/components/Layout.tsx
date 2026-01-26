@@ -1,5 +1,6 @@
-import { Dashboard, FitnessCenter, Logout, Storage } from '@mui/icons-material';
-import { Box, Button, Container, Typography } from '@mui/material';
+import { Dashboard, FitnessCenter, Logout, Notifications, Storage } from '@mui/icons-material';
+import { Avatar, Badge, Box, Button, Container, IconButton, Menu, MenuItem, Typography } from '@mui/material';
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -7,21 +8,60 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+interface AlertData {
+  id: number;
+  full_name: string;
+  days_left: number;
+  gym_type: string;
+  contact_number: string;
+  photo: string | null;
+}
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // initialise with a safe fallback
-  const [currentTab, setCurrentTab] = useState<string>(location.pathname ?? '/');
+  const currentTab = location.pathname;
+  const [alerts, setAlerts] = useState<AlertData[]>([]);
+  const [notificationsAnchor, setNotificationsAnchor] = useState<null | HTMLElement>(null);
 
-  // update when the route changes
+  // fetch alerts
+  const fetchAlerts = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await axios.get('http://localhost:8000/api/dashboard/', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAlerts(response.data.alerts || []);
+    } catch (error) {
+      console.error("Error fetching alerts:", error);
+    }
+  };
+
   useEffect(() => {
-    setCurrentTab(location.pathname);
-  }, [location.pathname]);
+    fetchAlerts();
+    // Refresh alerts every 30 seconds
+    const interval = setInterval(fetchAlerts, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
+  };
+
+  const handleNotificationsClick = (event: React.MouseEvent<HTMLElement>) => {
+    setNotificationsAnchor(event.currentTarget);
+  };
+
+  const handleNotificationsClose = () => {
+    setNotificationsAnchor(null);
+  };
+
+  const handleAlertClick = (alert: AlertData) => {
+    setNotificationsAnchor(null);
+    navigate('/athletes', { state: { openProfileId: alert.id } });
   };
 
   return (
@@ -161,6 +201,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Box>
           </Box>
 
+          {/* Notifications Bell */}
+          <IconButton
+            onClick={handleNotificationsClick}
+            sx={{
+              color: 'rgba(255,255,255,0.9)',
+              mr: 2,
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <Badge badgeContent={alerts.length} color="error">
+              <Notifications />
+            </Badge>
+          </IconButton>
+          {/* Debug: {alerts.length} */}
+
           {/* Logout Button */}
           <Button
             onClick={handleLogout}
@@ -187,6 +246,58 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Button>
         </Box>
       </Box>
+
+      {/* Notifications Menu */}
+      <Menu
+        anchorEl={notificationsAnchor}
+        open={Boolean(notificationsAnchor)}
+        onClose={handleNotificationsClose}
+        PaperProps={{
+          sx: {
+            mt: 1.5,
+            minWidth: 300,
+            maxHeight: 400,
+            overflow: 'auto',
+          },
+        }}
+      >
+        {alerts.length === 0 ? (
+          <MenuItem disabled>
+            <Typography>No alerts</Typography>
+          </MenuItem>
+        ) : (
+          alerts.map((alert) => (
+            <MenuItem key={alert.id} onClick={() => handleAlertClick(alert)}>
+              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <Avatar
+                  src={alert.photo ? (alert.photo.startsWith('http') ? alert.photo : `http://localhost:8000${alert.photo}`) : undefined}
+                  alt={alert.full_name}
+                  sx={{ width: 40, height: 40, mr: 2 }}
+                >
+                  {!alert.photo && alert.full_name.charAt(0).toUpperCase()}
+                </Avatar>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {alert.full_name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {alert.gym_type} • {alert.contact_number}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: alert.days_left < 0 ? 'error.main' : alert.days_left <= 3 ? 'warning.main' : 'text.secondary',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {alert.days_left < 0 ? `${Math.abs(alert.days_left)} days overdue` : `${alert.days_left} days left`}
+                  </Typography>
+                </Box>
+              </Box>
+            </MenuItem>
+          ))
+        )}
+      </Menu>
 
       {/* Main Content with top padding for floating navbar */}
       <Box

@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from .models import Athlete, Shelf, Payment
 from datetime import date, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -52,6 +55,16 @@ class AthleteSerializer(serializers.ModelSerializer):
         # Keep existing fee_deadline_date unless it's a renewal (handled separately)
         if 'fee_deadline_date' not in validated_data:
             validated_data['fee_deadline_date'] = instance.fee_deadline_date
+        
+        # ---------- ROBUST FIX: Only update is_active if explicitly provided ----------
+        # Check if is_active was in the original request data (not just validated_data)
+        if 'is_active' in self.initial_data:
+            # It was explicitly provided, use the validated value
+            logger.info(f"is_active explicitly provided: {validated_data.get('is_active')}")
+        else:
+            # Not in request, explicitly preserve current value
+            logger.info(f"is_active not in request, preserving: {instance.is_active}")
+            validated_data['is_active'] = instance.is_active
         
         return super().update(instance, validated_data)
 
