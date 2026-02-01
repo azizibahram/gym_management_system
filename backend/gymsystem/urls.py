@@ -36,7 +36,6 @@ def index_view(request):
         return HttpResponse(f.read())
 
 urlpatterns = [
-    path("", index_view),
     path("admin/", admin.site.urls),
     path('api/', include(router.urls)),
     path('api/dashboard/', DashboardStatsView.as_view(), name='dashboard'),
@@ -46,5 +45,10 @@ urlpatterns = [
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-urlpatterns += [re_path(r'^(?P<path>.+)$', serve, {'document_root': settings.STATIC_ROOT})]
+
+# Serve static files (frontend build)
+urlpatterns += [re_path(r'^assets/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT / 'assets'})]
+urlpatterns += [re_path(r'^fonts/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT / 'fonts'})]
+
+# Catch-all: serve index.html for all other routes (SPA support)
 urlpatterns += [re_path(r'^.*$', index_view)]

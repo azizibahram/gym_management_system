@@ -1,5 +1,5 @@
-import { CloudUpload, Delete } from '@mui/icons-material';
-import { Box, IconButton, Typography } from '@mui/material';
+import { CameraAlt, CloudUpload, Delete } from '@mui/icons-material';
+import { Box, Fade, IconButton, Typography, Zoom } from '@mui/material';
 import React, { useCallback, useState } from 'react';
 
 interface PhotoUploaderProps {
@@ -10,33 +10,7 @@ interface PhotoUploaderProps {
 const PhotoUploader: React.FC<PhotoUploaderProps> = ({ onPhotoChange, currentPhoto }) => {
     const [preview, setPreview] = useState<string | null>(currentPhoto || null);
     const [isDragging, setIsDragging] = useState(false);
-
-    const handleDragOver = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-    }, []);
-
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-    }, []);
-
-    const handleDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-
-        const files = e.dataTransfer.files;
-        if (files && files[0]) {
-            handleFile(files[0]);
-        }
-    }, []);
-
-    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (files && files[0]) {
-            handleFile(files[0]);
-        }
-    };
+    const [hovered, setHovered] = useState(false);
 
     const handleFile = (file: File) => {
         if (file.type.startsWith('image/')) {
@@ -51,6 +25,35 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({ onPhotoChange, currentPho
         }
     };
 
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    }, []);
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const files = e.dataTransfer.files;
+        if (files && files[0]) {
+            handleFile(files[0]);
+        }
+    };
+
+    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files[0]) {
+            handleFile(files[0]);
+        }
+    };
+
+
+
     const handleRemove = () => {
         setPreview(null);
         onPhotoChange(null);
@@ -58,93 +61,179 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({ onPhotoChange, currentPho
 
     return (
         <Box sx={{ my: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#667eea' }}>
+            <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                    mb: 2, 
+                    fontWeight: 700, 
+                    color: '#6366f1',
+                    textAlign: 'center',
+                }}
+            >
                 Athlete Photo
             </Typography>
 
             {preview ? (
-                <Box
-                    sx={{
-                        position: 'relative',
-                        width: '100%',
-                        maxWidth: 300,
-                        mx: 'auto',
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                        boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-                    }}
-                >
-                    <img
-                        src={preview}
-                        alt="Preview"
-                        style={{
-                            width: '100%',
-                            height: 'auto',
-                            display: 'block',
-                        }}
-                    />
-                    <IconButton
-                        onClick={handleRemove}
+                <Zoom in={true} timeout={300}>
+                    <Box
                         sx={{
-                            position: 'absolute',
-                            top: 8,
-                            right: 8,
-                            backgroundColor: 'rgba(244, 67, 54, 0.9)',
-                            color: 'white',
+                            position: 'relative',
+                            width: '100%',
+                            maxWidth: 280,
+                            mx: 'auto',
+                            borderRadius: 4,
+                            overflow: 'hidden',
+                            boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
+                            transition: 'all 0.3s ease',
                             '&:hover': {
-                                backgroundColor: '#f44336',
+                                transform: 'scale(1.02)',
+                                boxShadow: '0 16px 40px rgba(0,0,0,0.2)',
+                            },
+                        }}
+                        onMouseEnter={() => setHovered(true)}
+                        onMouseLeave={() => setHovered(false)}
+                    >
+                        <img
+                            src={preview}
+                            alt="Preview"
+                            style={{
+                                width: '100%',
+                                height: 'auto',
+                                display: 'block',
+                                transition: 'transform 0.3s ease',
+                                transform: hovered ? 'scale(1.05)' : 'scale(1)',
+                            }}
+                        />
+                        <Fade in={hovered}>
+                            <Box
+                                sx={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    background: 'rgba(0,0,0,0.4)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <IconButton
+                                    onClick={handleRemove}
+                                    sx={{
+                                        backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                                        color: 'white',
+                                        width: 56,
+                                        height: 56,
+                                        '&:hover': {
+                                            backgroundColor: '#ef4444',
+                                            transform: 'scale(1.1)',
+                                        },
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+                                    }}
+                                >
+                                    <Delete sx={{ fontSize: 28 }} />
+                                </IconButton>
+                            </Box>
+                        </Fade>
+                        
+                        <IconButton
+                            onClick={handleRemove}
+                            sx={{
+                                position: 'absolute',
+                                top: 12,
+                                right: 12,
+                                backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                                color: 'white',
+                                width: 40,
+                                height: 40,
+                                '&:hover': {
+                                    backgroundColor: '#ef4444',
+                                    transform: 'scale(1.1)',
+                                },
+                                transition: 'all 0.2s ease',
+                                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+                            }}
+                        >
+                            <Delete />
+                        </IconButton>
+                    </Box>
+                </Zoom>
+            ) : (
+                <Zoom in={true} timeout={300}>
+                    <Box
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        sx={{
+                            border: isDragging ? '3px dashed #6366f1' : '2px dashed #cbd5e1',
+                            borderRadius: 4,
+                            p: 5,
+                            textAlign: 'center',
+                            backgroundColor: isDragging ? 'rgba(99, 102, 241, 0.08)' : '#f8fafc',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            maxWidth: 320,
+                            mx: 'auto',
+                            '&:hover': {
+                                borderColor: '#6366f1',
+                                backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 8px 25px rgba(99, 102, 241, 0.15)',
                             },
                         }}
                     >
-                        <Delete />
-                    </IconButton>
-                </Box>
-            ) : (
-                <Box
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    sx={{
-                        border: isDragging ? '3px dashed #667eea' : '2px dashed #ccc',
-                        borderRadius: 3,
-                        p: 4,
-                        textAlign: 'center',
-                        backgroundColor: isDragging ? 'rgba(102, 126, 234, 0.05)' : '#f9f9f9',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                            borderColor: '#667eea',
-                            backgroundColor: 'rgba(102, 126, 234, 0.05)',
-                        },
-                    }}
-                >
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileInput}
-                        style={{ display: 'none' }}
-                        id="photo-upload"
-                    />
-                    <label htmlFor="photo-upload" style={{ cursor: 'pointer' }}>
-                        <CloudUpload
-                            sx={{
-                                fontSize: 64,
-                                color: isDragging ? '#667eea' : '#ccc',
-                                mb: 2,
-                                transition: 'color 0.3s ease',
-                            }}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileInput}
+                            style={{ display: 'none' }}
+                            id="photo-upload"
                         />
-                        <Typography variant="h6" sx={{ mb: 1, color: '#667eea', fontWeight: 600 }}>
-                            {isDragging ? 'Drop photo here' : 'Upload Photo'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Drag and drop or click to browse
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                            Supported formats: JPG, PNG, GIF
-                        </Typography>
-                    </label>
-                </Box>
+                        <label htmlFor="photo-upload" style={{ cursor: 'pointer', display: 'block' }}>
+                            <Box
+                                sx={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: '50%',
+                                    background: isDragging 
+                                        ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' 
+                                        : 'linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    mx: 'auto',
+                                    mb: 3,
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: isDragging 
+                                        ? '0 8px 25px rgba(99, 102, 241, 0.4)' 
+                                        : '0 4px 15px rgba(0,0,0,0.05)',
+                                }}
+                            >
+                                {isDragging ? (
+                                    <CloudUpload sx={{ fontSize: 40, color: 'white' }} />
+                                ) : (
+                                    <CameraAlt sx={{ fontSize: 36, color: '#6366f1' }} />
+                                )}
+                            </Box>
+                            <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                    mb: 1, 
+                                    color: isDragging ? '#6366f1' : '#1e293b', 
+                                    fontWeight: 700,
+                                    transition: 'color 0.3s ease',
+                                }}
+                            >
+                                {isDragging ? 'Drop photo here' : 'Upload Photo'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                Drag and drop or click to browse
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Supported formats: JPG, PNG, GIF
+                            </Typography>
+                        </label>
+                    </Box>
+                </Zoom>
             )}
         </Box>
     );

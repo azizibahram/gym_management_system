@@ -1,5 +1,5 @@
 import { Lock, Visibility, VisibilityOff } from '@mui/icons-material';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, TextField } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Fade, IconButton, InputAdornment, TextField, Typography, Zoom } from '@mui/material';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -45,7 +45,6 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Password changed successfully, logout user
       logout();
       onClose();
     } catch (err) {
@@ -68,19 +67,67 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1
-      }}>
-        <Lock />
-        Change Password
-      </DialogTitle>
-      <DialogContent sx={{ pt: 3 }}>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 4,
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+          overflow: 'hidden',
+        }
+      }}
+    >
+      <Zoom in={open} timeout={300}>
+        <DialogTitle sx={{
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          py: 3,
+          px: 4,
+        }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.2)',
+            }}
+          >
+            <Lock sx={{ fontSize: 24 }} />
+          </Box>
+          <Typography variant="h6" fontWeight={700}>
+            Change Password
+          </Typography>
+        </DialogTitle>
+      </Zoom>
+      
+      <DialogContent sx={{ pt: 4, pb: 2, px: 4 }}>
         <form onSubmit={handleSubmit}>
+          <Fade in={!!error}>
+            <Box
+              sx={{
+                mb: 3,
+                p: 2,
+                borderRadius: 2,
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                display: error ? 'block' : 'none',
+              }}
+            >
+              <Typography color="error" sx={{ fontWeight: 500, textAlign: 'center' }}>
+                {error}
+              </Typography>
+            </Box>
+          </Fade>
+
           <TextField
             label="Current Password"
             type={showOldPassword ? 'text' : 'password'}
@@ -89,12 +136,24 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
             fullWidth
             margin="normal"
             required
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2.5,
+                backgroundColor: 'rgba(99, 102, 241, 0.02)',
+              },
+            }}
             InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock sx={{ color: '#6366f1' }} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     onClick={() => setShowOldPassword(!showOldPassword)}
                     edge="end"
+                    sx={{ color: '#6366f1' }}
                   >
                     {showOldPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -102,6 +161,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
               ),
             }}
           />
+          
           <TextField
             label="New Password"
             type={showNewPassword ? 'text' : 'password'}
@@ -110,12 +170,24 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
             fullWidth
             margin="normal"
             required
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2.5,
+                backgroundColor: 'rgba(99, 102, 241, 0.02)',
+              },
+            }}
             InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock sx={{ color: '#6366f1' }} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     edge="end"
+                    sx={{ color: '#6366f1' }}
                   >
                     {showNewPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -123,6 +195,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
               ),
             }}
           />
+          
           <TextField
             label="Confirm New Password"
             type={showConfirmPassword ? 'text' : 'password'}
@@ -131,12 +204,24 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
             fullWidth
             margin="normal"
             required
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2.5,
+                backgroundColor: 'rgba(99, 102, 241, 0.02)',
+              },
+            }}
             InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock sx={{ color: '#6366f1' }} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     edge="end"
+                    sx={{ color: '#6366f1' }}
                   >
                     {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -144,28 +229,46 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
               ),
             }}
           />
-          {error && (
-            <TextField
-              value={error}
-              fullWidth
-              margin="normal"
-              error
-              helperText={error}
-              InputProps={{
-                readOnly: true,
-              }}
-            />
-          )}
+
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, ml: 1 }}>
+            Password must be at least 8 characters long
+          </Typography>
         </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>
+      
+      <DialogActions sx={{ px: 4, pb: 4 }}>
+        <Button 
+          onClick={handleClose} 
+          disabled={loading}
+          sx={{
+            color: '#64748b',
+            fontWeight: 600,
+            px: 3,
+            '&:hover': { backgroundColor: 'rgba(100, 116, 139, 0.1)' },
+          }}
+        >
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={loading || !oldPassword || !newPassword || !confirmPassword}
+          sx={{
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            borderRadius: 2.5,
+            px: 4,
+            py: 1,
+            fontWeight: 700,
+            boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+              boxShadow: '0 6px 20px rgba(99, 102, 241, 0.5)',
+            },
+            '&:disabled': {
+              background: '#cbd5e1',
+              boxShadow: 'none',
+            },
+          }}
         >
           {loading ? 'Changing...' : 'Change Password'}
         </Button>
