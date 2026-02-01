@@ -1,97 +1,77 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal EnableExtensions EnableDelayedExpansion
 
-REM Set force reset flag if argument provided
-set force_reset=0
-if "%1"=="--reset" set force_reset=1
+echo ================================
+echo   Django Auto Runner (Windows)
+echo ================================
 
-REM Navigate to backend directory if not already there
+REM Move to script directory
+cd /d "%~dp0"
+
+REM If backend folder exists, enter it
+if exist "backend\manage.py" (
+    cd backend
+)
+
+REM Ensure manage.py exists
 if not exist "manage.py" (
-    if exist "backend\manage.py" (
-        cd backend
-    ) else (
-        echo Error: Django manage.py not found. Please run this script from the project root or backend directory.
+    echo ERROR: manage.py not found!
+    pause
+    exit /b 1
+)
+
+REM Create virtual environment if missing
+if not exist "venv\Scripts\activate.bat" (
+    echo Creating virtual environment...
+    python -m venv venv
+    if errorlevel 1 (
+        echo ERROR: Failed to create virtual environment
         pause
         exit /b 1
     )
 )
 
-REM Check if .venv exists and has all required packages
-set valid=0
-if exist ".venv" (
-    call .venv\Scripts\activate.bat
-    set missing=0
-    for /f "usebackq tokens=*" %%i in (`findstr /r /v "^#" requirements.txt`) do (
-        for /f "tokens=1 delims==" %%p in ("%%i") do (
-            pip show %%p >nul 2>&1 || (
-                echo Installing missing package: %%p
-                pip install %%p --timeout 100
-                set missing=1
-            )
-        )
-    )
-    if !missing! EQU 0 (
-        echo All packages installed.
-        set valid=1
-    )
-) else (
-    echo Virtual environment not found. Creating a new one.
-    python -m venv .venv
-    call .venv\Scripts\activate.bat
-    pip install -r requirements.txt --timeout 100
-    set valid=1
+REM Activate virtual environment
+echo Activating virtual environment...
+call venv\Scripts\activate.bat
+if errorlevel 1 (
+    echo ERROR: Failed to activate virtual environment
+    pause
+    exit /b 1
 )
 
-REM Check if migrations exist
-set has_migrations=0
-if exist "gym\migrations\0001_initial.py" (
-    set has_migrations=1
+REM Show active python (debug)
+echo Using Python:
+where python
+echo.
+
+REM Upgrade pip
+python -m pip install --upgrade pip
+
+REM Install dependencies if requirements.txt exists
+if exist "requirements.txt" (
+    echo Installing dependencies...
+    pip install -r requirements.txt
 )
 
-REM Reset migrations if none exist or if force reset is enabled
-if !has_migrations!==0 (
-    echo No migrations found. Full reset required.
-    set do_reset=1
-) else (
-    if !force_reset!==1 (
-        echo Force reset enabled.
-        set do_reset=1
-    ) else (
-        echo Existing migrations found. Using them.
-        set do_reset=0
-    )
+REM Django checks
+echo Running Django checks...
+python manage.py check
+if errorlevel 1 (
+    echo ERROR: Django check failed
+    pause
+    exit /b 1
 )
 
-if !do_reset!==1 (
-    echo Resetting migrations...
-    
-    REM Delete database if exists
-    if exist "db.sqlite3" del /q "db.sqlite3"
-    
-    REM Clean migrations and __pycache__ in gym app
-    if exist "gym\migrations" (
-        rmdir /s /q "gym\migrations"
-        mkdir "gym\migrations"
-        type nul > "gym\migrations\__init__.py"
-    )
-    if exist "gym\__pycache__" (
-        rmdir /s /q "gym\__pycache__"
-    )
-    if exist "gymsystem\__pycache__" (
-        rmdir /s /q "gymsystem\__pycache__"
-    )
-)
-
-REM Make and apply migrations for gym app
-python manage.py makemigrations gym
+REM Migrations
+echo Making migrations...
+python manage.py makemigrations
 python manage.py migrate
 
-REM Create superuser if it doesn't exist
-echo Creating superuser (admin/admin)...
-python create_superuser.py
-
-REM Start Django server
-echo Starting Django development server...
+REM Run server
+echo ================================
+echo Starting Django Server...
+echo ================================
 python manage.py runserver
 
 pause
