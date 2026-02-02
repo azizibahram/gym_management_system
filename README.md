@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏋️ Energy Gym Management System (MIS)
+# 🏋️ Gym Management System (MIS)
 
 [![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
