@@ -845,20 +845,21 @@ const Athletes: React.FC = () => {
 
               {/* Info Section */}
               <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                  <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ pr: 1 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', columnGap: 1, rowGap: 0.5, alignItems: 'center' }}>
+                  <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ pr: 1, lineHeight: 1.2 }}>
                     {athlete.full_name}
                   </Typography>
-                  {getStatusChip(athlete.days_left)}
+                  <Box sx={{ justifySelf: 'end' }}>
+                    {getStatusChip(athlete.days_left)}
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ gridColumn: '1 / -1' }}>
+                    {athlete.contact_number || 'No contact'}
+                  </Typography>
                 </Box>
-
-                <Typography variant="body2" color="text.secondary">
-                  {athlete.contact_number || 'No contact'}
-                </Typography>
 
                 {/* Info Grid */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 2, rowGap: 1.5, alignItems: 'start' }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Gym Type
                     </Typography>
@@ -879,7 +880,7 @@ const Athletes: React.FC = () => {
                     />
                   </Box>
 
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Time
                     </Typography>
@@ -898,7 +899,7 @@ const Athletes: React.FC = () => {
                     />
                   </Box>
 
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Locker
                     </Typography>
@@ -920,7 +921,7 @@ const Athletes: React.FC = () => {
                     )}
                   </Box>
 
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Fee Due
                     </Typography>
