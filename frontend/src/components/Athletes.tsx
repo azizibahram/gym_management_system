@@ -1,10 +1,12 @@
-import { AccessTime, AccountBox, Add, ArrowDownward, ArrowUpward, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FilterList, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Search, Storage, ToggleOff, ToggleOn, VerifiedUser, Warning } from '@mui/icons-material';
+import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FilterList, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Search, Storage, ToggleOff, ToggleOn, VerifiedUser, Warning } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grid, Grow, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import PhotoUploader from './PhotoUploader';
+import { Grid as VirtualGrid } from 'react-window';
+import type { CellComponentProps } from 'react-window';
 
 interface Payment {
   id: number;
@@ -39,6 +41,136 @@ interface Shelf {
   status: string;
 }
 
+const dialogPaperSx = {
+  borderRadius: 4,
+  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+};
+
+const dialogTitlePurpleSx = {
+  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+  color: 'white',
+  fontWeight: 700,
+  py: 3,
+};
+
+const dialogTitleGreenSx = {
+  background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+  color: 'white',
+  fontWeight: 700,
+  py: 3,
+};
+
+const buttonSecondarySx = {
+  color: '#64748b',
+  fontWeight: 600,
+  '&:hover': { backgroundColor: 'rgba(100, 116, 139, 0.1)' },
+};
+
+const buttonPrimaryPurpleSx = {
+  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+  borderRadius: 2.5,
+  px: 4,
+  fontWeight: 700,
+  boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+    boxShadow: '0 6px 20px rgba(99, 102, 241, 0.5)',
+  },
+};
+
+const buttonPrimaryGreenSx = {
+  background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+  borderRadius: 2.5,
+  px: 4,
+  fontWeight: 700,
+  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.5)',
+  },
+};
+
+const headerContainerSx = {
+  textAlign: 'center',
+  mb: 5,
+  py: 4,
+  px: 3,
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
+  borderRadius: 4,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.5)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '4px',
+    background: 'linear-gradient(90deg, #6366f1, #ec4899, #f59e0b, #10b981)',
+    backgroundSize: '300% 100%',
+    animation: 'gradientShift 5s ease infinite',
+  },
+};
+
+const statusChipOverdueSx = {
+  background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+  color: 'white',
+  fontWeight: 700,
+  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+};
+
+const statusChipCriticalSx = {
+  background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+  color: 'white',
+  fontWeight: 700,
+  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+};
+
+const statusChipWarningSx = {
+  background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+  color: 'white',
+  fontWeight: 700,
+  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+};
+
+const statusChipActiveSx = {
+  background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+  color: 'white',
+  fontWeight: 700,
+  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+};
+
+const statusTextOverdueSx = {
+  color: '#ef4444',
+  fontWeight: 600,
+  fontSize: '0.7rem',
+};
+
+const statusTextCriticalSx = {
+  color: '#f59e0b',
+  fontWeight: 600,
+  fontSize: '0.7rem',
+};
+
+const statusTextWarningSx = {
+  color: '#3b82f6',
+  fontWeight: 600,
+  fontSize: '0.7rem',
+};
+
+const statusTextActiveSx = {
+  color: '#10b981',
+  fontWeight: 600,
+  fontSize: '0.7rem',
+};
+
+const GRID_GAP = 24;
+const CARD_MIN_WIDTH = 320;
+const CARD_HEIGHT = 580;
+
 const Athletes: React.FC = () => {
   const location = useLocation();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
@@ -69,8 +201,13 @@ const Athletes: React.FC = () => {
   const [filterFeeStatus, setFilterFeeStatus] = useState('');
 
   // Sorting states
-  const [sortField, setSortField] = useState<string>('');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortField] = useState<string>('');
+  const [sortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Virtualized grid sizing
+  const [gridWidth, setGridWidth] = useState(1200);
+  const [gridHeight, setGridHeight] = useState(720);
+  const gridOuterRef = useRef<HTMLDivElement>(null);
 
   // Renewal & Profile State
   const [renewOpen, setRenewOpen] = useState(false);
@@ -89,6 +226,7 @@ const Athletes: React.FC = () => {
       if (filterGymType) params.append('gym_type', filterGymType);
       if (filterGymTime) params.append('gym_time', filterGymTime);
       if (filterFeeStatus) params.append('fee_status', filterFeeStatus);
+      params.append('ordering', '-registration_date');
 
       const response = await axios.get(`http://localhost:8000/api/athletes/?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -118,13 +256,19 @@ const Athletes: React.FC = () => {
     setProfileOpen(true);
   };
 
+  // Load static data once on mount
   useEffect(() => {
-    const loadData = async () => {
-      await fetchAthletes();
-      await fetchShelves();
-    };
-    loadData();
-    setTimeout(() => setLoaded(true), 100);
+    fetchShelves();
+    const timeoutId = setTimeout(() => setLoaded(true), 100);
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Debounced fetch for athletes when filters/search change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchAthletes();
+    }, 350);
+    return () => clearTimeout(timeoutId);
   }, [searchQuery, filterGymType, filterGymTime, filterFeeStatus]);
 
   // Check for profile to open from navigation state
@@ -144,6 +288,35 @@ const Athletes: React.FC = () => {
       }
     }
   }, [location.state, athletes, hasOpenedProfile]);
+
+  // Virtualized grid: keep width and height in sync with viewport/container
+  useEffect(() => {
+    const updateHeight = () => {
+      const nextHeight = Math.max(520, window.innerHeight - 320);
+      setGridHeight(nextHeight);
+    };
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  useEffect(() => {
+    const node = gridOuterRef.current;
+    if (!node) {
+      setGridWidth(window.innerWidth);
+      return;
+    }
+    if (typeof ResizeObserver === 'undefined') {
+      setGridWidth(node.clientWidth);
+      return;
+    }
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setGridWidth(entry.contentRect.width);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const calculateFee = (type: string, discount: number) => {
     const base = type === 'fitness' ? 1000 : 700;
@@ -239,19 +412,6 @@ const Athletes: React.FC = () => {
     setFilterFeeStatus('');
   };
 
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const getSortIcon = (field: string) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <ArrowUpward fontSize="small" sx={{ ml: 0.5 }} /> : <ArrowDownward fontSize="small" sx={{ ml: 0.5 }} />;
-  };
 
   const sortedAthletes = useMemo<Athlete[]>(() => {
     return [...athletes].sort((a, b) => {
@@ -294,9 +454,43 @@ const Athletes: React.FC = () => {
 
   const activeFiltersCount = [filterGymType, filterGymTime, filterFeeStatus].filter(f => f).length;
 
-  // Calculate badge counts
-  const criticalCount = athletes.filter(a => a.days_left <= 3 && a.days_left >= 0).length;
-  const overdueCount = athletes.filter(a => a.days_left < 0).length;
+  // Lightweight render profiling (dev only)
+  const renderIdRef = useRef(0);
+  if (import.meta.env.DEV) {
+    renderIdRef.current += 1;
+    performance.mark(`athletes-render-start-${renderIdRef.current}`);
+  }
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const id = renderIdRef.current;
+    const startMark = `athletes-render-start-${id}`;
+    const endMark = `athletes-render-end-${id}`;
+    const measureName = `athletes-render-${id}`;
+    performance.mark(endMark);
+    performance.measure(measureName, startMark, endMark);
+    const [measure] = performance.getEntriesByName(measureName).slice(-1);
+    if (measure) {
+      // eslint-disable-next-line no-console
+      console.log(`[Athletes] render ${id}: ${measure.duration.toFixed(2)}ms`);
+    }
+    performance.clearMarks(startMark);
+    performance.clearMarks(endMark);
+    performance.clearMeasures(measureName);
+  });
+
+  // Calculate badge counts (memoized)
+  const { activeCount, criticalCount, overdueCount } = useMemo(() => {
+    let active = 0;
+    let critical = 0;
+    let overdue = 0;
+    for (const athlete of athletes) {
+      if (athlete.is_active) active += 1;
+      if (athlete.days_left < 0) overdue += 1;
+      else if (athlete.days_left <= 3) critical += 1;
+    }
+    return { activeCount: active, criticalCount: critical, overdueCount: overdue };
+  }, [athletes]);
 
   const handleOpen = (athlete?: Athlete) => {
     if (athlete) {
@@ -386,21 +580,12 @@ const Athletes: React.FC = () => {
     }
   };
 
-  const getStatusChip = (days: number) => {
+  const getStatusChip = React.useCallback((days: number) => {
     if (days < 0) {
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Chip
-            label="Overdue"
-            size="small"
-            sx={{
-              background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
-              color: 'white',
-              fontWeight: 700,
-              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
-            }}
-          />
-          <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 600, fontSize: '0.7rem' }}>
+          <Chip label="Overdue" size="small" sx={statusChipOverdueSx} />
+          <Typography variant="caption" sx={statusTextOverdueSx}>
             {Math.abs(days)} days ago
           </Typography>
         </Box>
@@ -408,17 +593,8 @@ const Athletes: React.FC = () => {
     } else if (days <= 5) {
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Chip
-            label="Critical"
-            size="small"
-            sx={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-              color: 'white',
-              fontWeight: 700,
-              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
-            }}
-          />
-          <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.7rem' }}>
+          <Chip label="Critical" size="small" sx={statusChipCriticalSx} />
+          <Typography variant="caption" sx={statusTextCriticalSx}>
             {days} days left
           </Typography>
         </Box>
@@ -426,17 +602,8 @@ const Athletes: React.FC = () => {
     } else if (days <= 15) {
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Chip
-            label="Warning"
-            size="small"
-            sx={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
-              color: 'white',
-              fontWeight: 700,
-              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
-            }}
-          />
-          <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 600, fontSize: '0.7rem' }}>
+          <Chip label="Warning" size="small" sx={statusChipWarningSx} />
+          <Typography variant="caption" sx={statusTextWarningSx}>
             {days} days left
           </Typography>
         </Box>
@@ -444,27 +611,18 @@ const Athletes: React.FC = () => {
     }
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        <Chip
-          label="Active"
-          size="small"
-          sx={{
-            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-            color: 'white',
-            fontWeight: 700,
-            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-          }}
-        />
-        <Typography variant="caption" sx={{ color: '#10b981', fontWeight: 600, fontSize: '0.7rem' }}>
+        <Chip label="Active" size="small" sx={statusChipActiveSx} />
+        <Typography variant="caption" sx={statusTextActiveSx}>
           {days} days left
         </Typography>
       </Box>
     );
-  };
+  }, []);
 
-  const kpiCards = [
+  const kpiCards = useMemo(() => [
     {
       title: 'Active Members',
-      value: athletes.filter(a => a.is_active).length,
+      value: activeCount,
       subtitle: 'Currently active',
       icon: <CheckCircle sx={{ fontSize: 28 }} />,
       gradient: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
@@ -489,37 +647,285 @@ const Athletes: React.FC = () => {
       shadow: '0 8px 32px rgba(239, 68, 68, 0.3)',
       delay: 300,
     },
-  ];
+  ], [activeCount, criticalCount, overdueCount]);
+
+  const columnCount = useMemo(() => {
+    return Math.max(1, Math.floor((gridWidth + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP)));
+  }, [gridWidth]);
+
+  const columnWidth = useMemo(() => {
+    const gaps = GRID_GAP * (columnCount - 1);
+    return Math.max(CARD_MIN_WIDTH, Math.floor((gridWidth - gaps) / columnCount));
+  }, [gridWidth, columnCount]);
+
+  const rowCount = useMemo(() => {
+    return Math.ceil(sortedAthletes.length / columnCount);
+  }, [sortedAthletes.length, columnCount]);
+
+  const gridCellProps = useMemo(() => {
+    return {
+      athletes: sortedAthletes,
+      columnCount,
+      shelves,
+    };
+  }, [sortedAthletes, columnCount, shelves]);
+
+  const renderCardCell = React.useCallback((props: CellComponentProps<{
+    athletes: Athlete[];
+    columnCount: number;
+    shelves: Shelf[];
+  }>) => {
+    const { columnIndex, rowIndex, style, athletes, columnCount, shelves } = props;
+    const index = rowIndex * columnCount + columnIndex;
+    if (index >= athletes.length) return null;
+    const athlete = athletes[index];
+    return (
+      <Box style={style}>
+        <Box style={{ paddingRight: GRID_GAP, paddingBottom: GRID_GAP, height: '100%', boxSizing: 'border-box' }}>
+          <Card
+            onClick={() => openProfile(athlete)}
+            sx={{
+              borderRadius: 4,
+              overflow: 'hidden',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+              background: 'linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.9) 100%)',
+              border: '1px solid rgba(0,0,0,0.05)',
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              height: '100%',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
+              }
+            }}
+          >
+              {/* Photo Section - Large */}
+              <Box sx={{
+                position: 'relative',
+                height: 280,
+                background: athlete.photo
+                  ? `url(${athlete.photo.startsWith('http') ? athlete.photo : `http://localhost:8000${athlete.photo}`})`
+                  : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+              }}>
+                {!athlete.photo && (
+                  <Avatar sx={{ width: 100, height: 100, bgcolor: 'rgba(255,255,255,0.2)' }}>
+                    <Person sx={{ fontSize: 60, color: 'white' }} />
+                  </Avatar>
+                )}
+
+                {/* Active/Inactive Indicator */}
+                <Box sx={{
+                  position: 'absolute',
+                  top: 12,
+                  left: 12,
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  background: athlete.is_active ? '#10b981' : '#94a3b8',
+                  boxShadow: '0 0 0 3px rgba(255,255,255,0.3)',
+                }} />
+
+                {/* Premium Gradient Overlay */}
+                <Box sx={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: '60%',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0))',
+                }} />
+              </Box>
+
+              {/* Info Section */}
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+                  <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ pr: 1 }}>
+                    {athlete.full_name}
+                  </Typography>
+                  {getStatusChip(athlete.days_left)}
+                </Box>
+
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {athlete.contact_number || 'No contact'}
+                </Typography>
+
+                {/* Info Grid */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Gym Type
+                    </Typography>
+                    <Chip
+                      label={athlete.gym_type}
+                      size="small"
+                      sx={{
+                        textTransform: 'capitalize',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        background: athlete.gym_type === 'fitness'
+                          ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                          : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                        color: 'white',
+                        height: 24,
+                      }}
+                    />
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Time
+                    </Typography>
+                    <Chip
+                      label={athlete.gym_time}
+                      size="small"
+                      sx={{
+                        textTransform: 'capitalize',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        background: 'rgba(99, 102, 241, 0.1)',
+                        color: '#6366f1',
+                        height: 24,
+                      }}
+                    />
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Locker
+                    </Typography>
+                    {athlete.shelf ? (
+                      <Chip
+                        label={shelves.find(s => s.id === Number(athlete.shelf))?.shelf_number || athlete.shelf}
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                          color: 'white',
+                          height: 24,
+                        }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.disabled">â€”</Typography>
+                    )}
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Fee Due
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600} color="#1e293b">
+                      {athlete.fee_deadline_date}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Action Buttons */}
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: 1,
+                  pt: 2,
+                  borderTop: '1px solid rgba(0,0,0,0.05)',
+                }}>
+                  <Tooltip title={athlete.is_active ? "Deactivate" : "Activate"}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); handleToggleStatus(athlete); }}
+                      sx={{
+                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(16, 185, 129, 0.1)' },
+                        transition: 'all 0.2s ease',
+                        width: 36,
+                        height: 36,
+                      }}
+                    >
+                      {athlete.is_active ? <ToggleOn color="success" /> : <ToggleOff color="action" />}
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Edit">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={(e) => { e.stopPropagation(); handleOpen(athlete); }}
+                      sx={{
+                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(99, 102, 241, 0.1)' },
+                        transition: 'all 0.2s ease',
+                        width: 36,
+                        height: 36,
+                      }}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Renew Membership">
+                    <IconButton
+                      size="small"
+                      color="success"
+                      onClick={(e) => openRenewDialog(e, athlete)}
+                      sx={{
+                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(16, 185, 129, 0.1)' },
+                        transition: 'all 0.2s ease',
+                        width: 36,
+                        height: 36,
+                      }}
+                    >
+                      <CreditCard fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Reassign Locker">
+                    <IconButton
+                      size="small"
+                      color="info"
+                      onClick={(e) => { e.stopPropagation(); handleReassignShelf(athlete); }}
+                      sx={{
+                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(59, 130, 246, 0.1)' },
+                        transition: 'all 0.2s ease',
+                        width: 36,
+                        height: 36,
+                      }}
+                    >
+                      <Storage fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Delete">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(athlete.id); }}
+                      sx={{
+                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(239, 68, 68, 0.1)' },
+                        transition: 'all 0.2s ease',
+                        width: 36,
+                        height: 36,
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
+    );
+  }, [getStatusChip, handleToggleStatus, handleOpen, openRenewDialog, handleReassignShelf, openProfile, handleDelete]);
 
   return (
     <Box sx={{ minHeight: '100vh', py: 2 }}>
       <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         {/* Header Section */}
         <Slide in={loaded} direction="down" timeout={500}>
-          <Box sx={{
-            textAlign: 'center',
-            mb: 5,
-            py: 4,
-            px: 3,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
-            borderRadius: 4,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.5)',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: 'linear-gradient(90deg, #6366f1, #ec4899, #f59e0b, #10b981)',
-              backgroundSize: '300% 100%',
-              animation: 'gradientShift 5s ease infinite',
-            },
-          }}>
+          <Box sx={headerContainerSx}>
             <Typography
               variant="h3"
               sx={{
@@ -780,197 +1186,40 @@ const Athletes: React.FC = () => {
           </Paper>
         </Fade>
 
-        {/* Athletes Table */}
+        {/* Athletes Card Grid */}
         <Fade in={loaded} timeout={1000}>
-          <Paper sx={{
-            borderRadius: 4,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-            background: 'linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.9) 100%)',
-            border: '1px solid rgba(0,0,0,0.05)',
-            overflow: 'hidden',
-          }}>
-            <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+          <Box>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="h6" fontWeight={700} color="#1e293b">
-                Athletes List
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Showing {athletes.length} athlete{athletes.length !== 1 ? 's' : ''}
+                Athletes ({athletes.length})
               </Typography>
             </Box>
 
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.05) 100%)' }}>
-                    <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>Photo</TableCell>
-                    <TableCell onClick={() => handleSort('fullName')} sx={{ cursor: 'pointer', fontWeight: 700, color: '#1e293b', '&:hover': { color: '#6366f1' } }}>
-                      Full Name {getSortIcon('fullName')}
-                    </TableCell>
-                    <TableCell onClick={() => handleSort('gymType')} sx={{ cursor: 'pointer', fontWeight: 700, color: '#1e293b', '&:hover': { color: '#6366f1' } }}>
-                      Gym Type {getSortIcon('gymType')}
-                    </TableCell>
-                    <TableCell onClick={() => handleSort('gymTime')} sx={{ cursor: 'pointer', fontWeight: 700, color: '#1e293b', '&:hover': { color: '#6366f1' } }}>
-                      Gym Time {getSortIcon('gymTime')}
-                    </TableCell>
-                    <TableCell onClick={() => handleSort('shelf')} sx={{ cursor: 'pointer', fontWeight: 700, color: '#1e293b', '&:hover': { color: '#6366f1' } }}>
-                      Locker {getSortIcon('shelf')}
-                    </TableCell>
-                    <TableCell onClick={() => handleSort('feeDeadline')} sx={{ cursor: 'pointer', fontWeight: 700, color: '#1e293b', '&:hover': { color: '#6366f1' } }}>
-                      Fee Deadline {getSortIcon('feeDeadline')}
-                    </TableCell>
-                    <TableCell onClick={() => handleSort('daysLeft')} sx={{ cursor: 'pointer', fontWeight: 700, color: '#1e293b', '&:hover': { color: '#6366f1' } }}>
-                      Status {getSortIcon('daysLeft')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sortedAthletes.map((athlete, index) => (
-                    <Grow in={true} timeout={300 + index * 50} key={athlete.id}>
-                      <TableRow
-                        hover
-                        sx={{ 
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          '&:hover': { 
-                            backgroundColor: 'rgba(99, 102, 241, 0.04)',
-                            transform: 'scale(1.005)',
-                          }
-                        }}
-                        onClick={() => openProfile(athlete)}
-                      >
-                        <TableCell>
-                          <Avatar
-                            src={athlete.photo ? (athlete.photo.startsWith('http') ? athlete.photo : `http://localhost:8000${athlete.photo}`) : undefined}
-                            alt={athlete.full_name}
-                            sx={{ 
-                              width: 50, 
-                              height: 50, 
-                              border: '3px solid white', 
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                              transition: 'transform 0.2s ease',
-                              '&:hover': {
-                                transform: 'scale(1.1)',
-                              }
-                            }}
-                          >
-                            {!athlete.photo && <Person />}
-                          </Avatar>
-                        </TableCell>
-                        <TableCell>
-                          <Typography fontWeight={700} color="#1e293b">{athlete.full_name}</Typography>
-                          <Typography variant="caption" color="text.secondary">{athlete.contact_number}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={athlete.gym_type} 
-                            size="small"
-                            sx={{ 
-                              textTransform: 'capitalize',
-                              fontWeight: 600,
-                              background: athlete.gym_type === 'fitness' 
-                                ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' 
-                                : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                              color: 'white',
-                            }} 
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={athlete.gym_time} 
-                            size="small"
-                            sx={{ 
-                              textTransform: 'capitalize',
-                              fontWeight: 600,
-                              background: 'rgba(99, 102, 241, 0.1)',
-                              color: '#6366f1',
-                            }} 
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {athlete.shelf ? (
-                            <Chip 
-                              label={shelves.find(s => s.id === Number(athlete.shelf))?.shelf_number || athlete.shelf}
-                              size="small"
-                              sx={{ 
-                                fontWeight: 700,
-                                background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-                                color: 'white',
-                              }} 
-                            />
-                          ) : (
-                            <Typography color="text.disabled">—</Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography fontWeight={500}>{athlete.fee_deadline_date}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusChip(athlete.days_left)}
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }} onClick={(e) => e.stopPropagation()}>
-                            <Tooltip title={athlete.is_active ? "Deactivate" : "Activate"}>
-                              <IconButton 
-                                size="small" 
-                                onClick={(e) => { e.stopPropagation(); handleToggleStatus(athlete); }}
-                                sx={{ '&:hover': { transform: 'scale(1.1)' }, transition: 'all 0.2s ease' }}
-                              >
-                                {athlete.is_active ? <ToggleOn color="success" fontSize="large" /> : <ToggleOff color="action" fontSize="large" />}
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Edit">
-                              <IconButton 
-                                size="small" 
-                                color="primary" 
-                                onClick={(e) => { e.stopPropagation(); handleOpen(athlete); }}
-                                sx={{ '&:hover': { transform: 'scale(1.1)' }, transition: 'all 0.2s ease' }}
-                              >
-                                <Edit />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Renew Membership">
-                              <IconButton 
-                                size="small" 
-                                color="success" 
-                                onClick={(e) => openRenewDialog(e, athlete)}
-                                sx={{ '&:hover': { transform: 'scale(1.1)' }, transition: 'all 0.2s ease' }}
-                              >
-                                <CreditCard />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Reassign Locker">
-                              <IconButton 
-                                size="small" 
-                                color="info" 
-                                onClick={(e) => { e.stopPropagation(); handleReassignShelf(athlete); }}
-                                sx={{ '&:hover': { transform: 'scale(1.1)' }, transition: 'all 0.2s ease' }}
-                              >
-                                <Storage />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete">
-                              <IconButton 
-                                size="small" 
-                                color="error" 
-                                onClick={(e) => { e.stopPropagation(); handleDelete(athlete.id); }}
-                                sx={{ '&:hover': { transform: 'scale(1.1)' }, transition: 'all 0.2s ease' }}
-                              >
-                                <Delete />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    </Grow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
+            <Box ref={gridOuterRef}>
+              <VirtualGrid
+                columnCount={columnCount}
+                columnWidth={columnWidth}
+                defaultHeight={gridHeight}
+                rowCount={rowCount}
+                rowHeight={CARD_HEIGHT + GRID_GAP}
+                defaultWidth={gridWidth}
+                style={{ height: gridHeight, width: '100%' }}
+                cellComponent={renderCardCell}
+                cellProps={gridCellProps}
+              >
+              </VirtualGrid>
+            </Box>
+            {/* Show count of displayed items */}
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Showing {sortedAthletes.length} of {sortedAthletes.length} athletes
+              </Typography>
+            </Box>
+          </Box>
         </Fade>
 
         {/* Add/Edit Dialog */}
+        {open && (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
           PaperProps={{
             sx: {
@@ -1190,52 +1439,27 @@ const Athletes: React.FC = () => {
               </Grid>
             </Grid>
           </DialogContent>
-          <DialogActions sx={{ px: 4, pb: 4 }}>
-            <Button 
-              onClick={handleClose}
-              sx={{
-                color: '#64748b',
-                fontWeight: 600,
-                '&:hover': { backgroundColor: 'rgba(100, 116, 139, 0.1)' },
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSubmit} 
-              variant="contained"
-              sx={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                borderRadius: 2.5,
-                px: 4,
-                fontWeight: 700,
-                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                  boxShadow: '0 6px 20px rgba(99, 102, 241, 0.5)',
-                },
-              }}
-            >
-              {editing ? 'Update' : 'Register'}
-            </Button>
-          </DialogActions>
+        <DialogActions sx={{ px: 4, pb: 4 }}>
+          <Button onClick={handleClose} sx={buttonSecondarySx}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained"
+            sx={buttonPrimaryPurpleSx}
+          >
+            {editing ? 'Update' : 'Register'}
+          </Button>
+        </DialogActions>
         </Dialog>
+        )}
 
         {/* Shelf Reassignment Dialog */}
+        {reassignOpen && (
         <Dialog open={reassignOpen} onClose={() => setReassignOpen(false)} maxWidth="sm" fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            }
-          }}
+          PaperProps={{ sx: dialogPaperSx }}
         >
-          <DialogTitle sx={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-            color: 'white',
-            fontWeight: 700,
-            py: 3,
-          }}>
+          <DialogTitle sx={dialogTitlePurpleSx}>
             Reassign Locker for {reassignAthlete?.full_name}
           </DialogTitle>
           <DialogContent sx={{ pt: 4, pb: 2 }}>
@@ -1260,51 +1484,26 @@ const Athletes: React.FC = () => {
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 4 }}>
-            <Button 
-              onClick={() => setReassignOpen(false)}
-              sx={{
-                color: '#64748b',
-                fontWeight: 600,
-                '&:hover': { backgroundColor: 'rgba(100, 116, 139, 0.1)' },
-              }}
-            >
+            <Button onClick={() => setReassignOpen(false)} sx={buttonSecondarySx}>
               Cancel
             </Button>
             <Button 
               onClick={handleReassignSubmit} 
               variant="contained"
-              sx={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                borderRadius: 2.5,
-                px: 4,
-                fontWeight: 700,
-                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                  boxShadow: '0 6px 20px rgba(99, 102, 241, 0.5)',
-                },
-              }}
+              sx={buttonPrimaryPurpleSx}
             >
               Reassign
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* Renewal Dialog */}
+        {renewOpen && (
         <Dialog open={renewOpen} onClose={() => setRenewOpen(false)}
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            }
-          }}
+          PaperProps={{ sx: dialogPaperSx }}
         >
-          <DialogTitle sx={{
-            background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-            color: 'white',
-            fontWeight: 700,
-            py: 3,
-          }}>
+          <DialogTitle sx={dialogTitleGreenSx}>
             Renew Membership
           </DialogTitle>
           <DialogContent sx={{ pt: 4, pb: 2, minWidth: 350 }}>
@@ -1328,50 +1527,26 @@ const Athletes: React.FC = () => {
             </FormControl>
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 4 }}>
-            <Button 
-              onClick={() => setRenewOpen(false)}
-              sx={{
-                color: '#64748b',
-                fontWeight: 600,
-                '&:hover': { backgroundColor: 'rgba(100, 116, 139, 0.1)' },
-              }}
-            >
+            <Button onClick={() => setRenewOpen(false)} sx={buttonSecondarySx}>
               Cancel
             </Button>
             <Button 
               onClick={submitRenew} 
               variant="contained"
-              sx={{
-                background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-                borderRadius: 2.5,
-                px: 4,
-                fontWeight: 700,
-                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.5)',
-                },
-              }}
+              sx={buttonPrimaryGreenSx}
             >
               Confirm Renewal
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* Profile Dialog */}
+        {profileOpen && (
         <Dialog open={profileOpen} onClose={() => setProfileOpen(false)} maxWidth="sm" fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            }
-          }}
+          PaperProps={{ sx: dialogPaperSx }}
         >
-          <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-            color: 'white',
-            py: 3,
-          }}>
+          <DialogTitle sx={{ ...dialogTitlePurpleSx, fontWeight: 500 }}>
             Athlete Profile
           </DialogTitle>
           <DialogContent sx={{ pt: 0, pb: 4, bgcolor: '#f8fafc' }}>
@@ -1533,14 +1708,7 @@ const Athletes: React.FC = () => {
             )}
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 4, bgcolor: '#f8fafc' }}>
-            <Button 
-              onClick={() => setProfileOpen(false)}
-              sx={{
-                color: '#64748b',
-                fontWeight: 600,
-                '&:hover': { backgroundColor: 'rgba(100, 116, 139, 0.1)' },
-              }}
-            >
+            <Button onClick={() => setProfileOpen(false)} sx={buttonSecondarySx}>
               Close
             </Button>
             <Button 
@@ -1553,22 +1721,13 @@ const Athletes: React.FC = () => {
                 }
               }}
               variant="contained"
-              sx={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                borderRadius: 2.5,
-                px: 4,
-                fontWeight: 700,
-                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                  boxShadow: '0 6px 20px rgba(99, 102, 241, 0.5)',
-                },
-              }}
+              sx={buttonPrimaryPurpleSx}
             >
               Renew Membership
             </Button>
           </DialogActions>
         </Dialog>
+        )}
       </Container>
     </Box>
   );

@@ -38,7 +38,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       const newAccessToken = response.data.access;
+      const newRefreshToken = response.data.refresh;
       localStorage.setItem('token', newAccessToken);
+      if (newRefreshToken) {
+        localStorage.setItem('refreshToken', newRefreshToken);
+      }
       return true;
     } catch (error) {
       console.error('Token refresh failed:', error);
