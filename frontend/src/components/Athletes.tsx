@@ -169,7 +169,7 @@ const statusTextActiveSx = {
 
 const GRID_GAP = 24;
 const CARD_MIN_WIDTH = 320;
-const CARD_HEIGHT = 580;
+const CARD_HEIGHT = 520;
 
 const Athletes: React.FC = () => {
   const location = useLocation();
@@ -693,10 +693,21 @@ const Athletes: React.FC = () => {
               transition: 'all 0.3s ease',
               cursor: 'pointer',
               height: '100%',
+              '& .athlete-card-actions': {
+                opacity: 0,
+                transform: 'translateY(8px)',
+                pointerEvents: 'none',
+                transition: 'all 0.2s ease',
+              },
               '&:hover': {
                 transform: 'translateY(-8px)',
                 boxShadow: '0 16px 48px rgba(0,0,0,0.15)',
-              }
+              },
+              '&:hover .athlete-card-actions': {
+                opacity: 1,
+                transform: 'translateY(0)',
+                pointerEvents: 'auto',
+              },
             }}
           >
               {/* Photo Section - Large */}
@@ -731,34 +742,124 @@ const Athletes: React.FC = () => {
                   boxShadow: '0 0 0 3px rgba(255,255,255,0.3)',
                 }} />
 
-                {/* Premium Gradient Overlay */}
-                <Box sx={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: '60%',
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0))',
-                }} />
+                {/* Actions Overlay (shown on hover) */}
+                <Box
+                  className="athlete-card-actions"
+                  sx={{
+                    position: 'absolute',
+                    left: 12,
+                    right: 12,
+                    bottom: 12,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: 1,
+                    backdropFilter: 'blur(6px)',
+                    background: 'rgba(15, 23, 42, 0.35)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 2,
+                    px: 1,
+                    py: 0.5,
+                  }}
+                >
+                  <Tooltip title={athlete.is_active ? "Deactivate" : "Activate"}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); handleToggleStatus(athlete); }}
+                      sx={{
+                        color: 'white',
+                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(16, 185, 129, 0.2)' },
+                        transition: 'all 0.2s ease',
+                        width: 34,
+                        height: 34,
+                      }}
+                    >
+                      {athlete.is_active ? <ToggleOn color="success" /> : <ToggleOff color="action" />}
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Edit">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); handleOpen(athlete); }}
+                      sx={{
+                        color: 'white',
+                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(99, 102, 241, 0.2)' },
+                        transition: 'all 0.2s ease',
+                        width: 34,
+                        height: 34,
+                      }}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Renew Membership">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => openRenewDialog(e, athlete)}
+                      sx={{
+                        color: 'white',
+                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(16, 185, 129, 0.2)' },
+                        transition: 'all 0.2s ease',
+                        width: 34,
+                        height: 34,
+                      }}
+                    >
+                      <CreditCard fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Reassign Locker">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); handleReassignShelf(athlete); }}
+                      sx={{
+                        color: 'white',
+                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(59, 130, 246, 0.2)' },
+                        transition: 'all 0.2s ease',
+                        width: 34,
+                        height: 34,
+                      }}
+                    >
+                      <Storage fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Delete">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(athlete.id); }}
+                      sx={{
+                        color: 'white',
+                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(239, 68, 68, 0.2)' },
+                        transition: 'all 0.2s ease',
+                        width: 34,
+                        height: 34,
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </Box>
 
               {/* Info Section */}
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+              <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                   <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ pr: 1 }}>
                     {athlete.full_name}
                   </Typography>
                   {getStatusChip(athlete.days_left)}
                 </Box>
 
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
                   {athlete.contact_number || 'No contact'}
                 </Typography>
 
                 {/* Info Grid */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 2, rowGap: 1.5, alignItems: 'start' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Gym Type
                     </Typography>
                     <Chip
@@ -773,12 +874,13 @@ const Athletes: React.FC = () => {
                           : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
                         color: 'white',
                         height: 24,
+                        alignSelf: 'flex-start',
                       }}
                     />
                   </Box>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Time
                     </Typography>
                     <Chip
@@ -791,12 +893,13 @@ const Athletes: React.FC = () => {
                         background: 'rgba(99, 102, 241, 0.1)',
                         color: '#6366f1',
                         height: 24,
+                        alignSelf: 'flex-start',
                       }}
                     />
                   </Box>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Locker
                     </Typography>
                     {athlete.shelf ? (
@@ -809,15 +912,16 @@ const Athletes: React.FC = () => {
                           background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
                           color: 'white',
                           height: 24,
+                          alignSelf: 'flex-start',
                         }}
                       />
                     ) : (
-                      <Typography variant="body2" color="text.disabled">â€”</Typography>
+                      <Typography variant="body2" color="text.disabled">-</Typography>
                     )}
                   </Box>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
                       Fee Due
                     </Typography>
                     <Typography variant="body2" fontWeight={600} color="#1e293b">
@@ -826,93 +930,6 @@ const Athletes: React.FC = () => {
                   </Box>
                 </Box>
 
-                {/* Action Buttons */}
-                <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 1,
-                  pt: 2,
-                  borderTop: '1px solid rgba(0,0,0,0.05)',
-                }}>
-                  <Tooltip title={athlete.is_active ? "Deactivate" : "Activate"}>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); handleToggleStatus(athlete); }}
-                      sx={{
-                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(16, 185, 129, 0.1)' },
-                        transition: 'all 0.2s ease',
-                        width: 36,
-                        height: 36,
-                      }}
-                    >
-                      {athlete.is_active ? <ToggleOn color="success" /> : <ToggleOff color="action" />}
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Edit">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={(e) => { e.stopPropagation(); handleOpen(athlete); }}
-                      sx={{
-                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(99, 102, 241, 0.1)' },
-                        transition: 'all 0.2s ease',
-                        width: 36,
-                        height: 36,
-                      }}
-                    >
-                      <Edit fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Renew Membership">
-                    <IconButton
-                      size="small"
-                      color="success"
-                      onClick={(e) => openRenewDialog(e, athlete)}
-                      sx={{
-                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(16, 185, 129, 0.1)' },
-                        transition: 'all 0.2s ease',
-                        width: 36,
-                        height: 36,
-                      }}
-                    >
-                      <CreditCard fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Reassign Locker">
-                    <IconButton
-                      size="small"
-                      color="info"
-                      onClick={(e) => { e.stopPropagation(); handleReassignShelf(athlete); }}
-                      sx={{
-                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(59, 130, 246, 0.1)' },
-                        transition: 'all 0.2s ease',
-                        width: 36,
-                        height: 36,
-                      }}
-                    >
-                      <Storage fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Delete">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(athlete.id); }}
-                      sx={{
-                        '&:hover': { transform: 'scale(1.15)', bgcolor: 'rgba(239, 68, 68, 0.1)' },
-                        transition: 'all 0.2s ease',
-                        width: 36,
-                        height: 36,
-                      }}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
               </CardContent>
             </Card>
           </Box>
