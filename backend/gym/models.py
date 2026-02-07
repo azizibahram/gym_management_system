@@ -17,7 +17,7 @@ class Athlete(models.Model):
     full_name = models.CharField(max_length=100)
     father_name = models.CharField(max_length=100, blank=True)
     photo = models.ImageField(upload_to='athletes/', blank=True, null=True)
-    registration_date = models.DateField(auto_now_add=True)
+    registration_date = models.DateTimeField(auto_now_add=True)
     fee_start_date = models.DateField(auto_now_add=True)
     fee_deadline_date = models.DateField()
     gym_type = models.CharField(max_length=20, choices=GYM_TYPE_CHOICES)
