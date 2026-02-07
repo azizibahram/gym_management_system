@@ -22,7 +22,9 @@ class AthleteViewSet(viewsets.ModelViewSet):
     ordering = ['-registration_date']
     
     def perform_create(self, serializer):
+        # First save without athlete.shelf to get the athlete instance
         athlete = serializer.save()
+        
         # Create initial registration payment
         Payment.objects.create(
             athlete=athlete,
@@ -30,6 +32,96 @@ class AthleteViewSet(viewsets.ModelViewSet):
             payment_type='registration',
             notes='Initial registration fee'
         )
+        
+        # Handle locker assignment after athlete is saved
+        shelf_id = self.request.data.get('shelf')
+        if shelf_id:
+            try:
+                shelf = Shelf.objects.get(id=shelf_id)
+                athlete.shelf = shelf
+                athlete.save()
+                
+                # Update locker fields
+                locker_duration = self.request.data.get('locker_duration_months')
+                locker_price = self.request.data.get('locker_price')
+                locker_end_date = self.request.data.get('locker_end_date')
+                
+                if locker_duration:
+                    shelf.locker_duration_months = int(locker_duration)
+                if locker_price:
+                    shelf.locker_price = float(locker_price)
+                if locker_end_date:
+                    shelf.locker_end_date = locker_end_date
+                if not shelf.locker_start_date:
+                    shelf.locker_start_date = date.today()
+                
+                shelf.assigned_athlete = athlete
+                shelf.status = 'assigned'
+                shelf.save()
+            except Shelf.DoesNotExist:
+                pass
+    
+    def perform_update(self, serializer):
+        # Get the old shelf before updating
+        old_shelf = serializer.instance.shelf if serializer.instance else None
+        
+        # Save the athlete
+        athlete = serializer.save()
+        
+        # Get the new shelf from request data
+        new_shelf_id = self.request.data.get('shelf')
+        
+        # Handle shelf changes
+        if new_shelf_id:
+            try:
+                new_shelf = Shelf.objects.get(id=int(new_shelf_id))
+                
+                # If changing from one shelf to another, unassign the old one
+                if old_shelf and old_shelf != new_shelf:
+                    old_shelf.assigned_athlete = None
+                    old_shelf.status = 'available'
+                    old_shelf.locker_duration_months = None
+                    old_shelf.locker_price = None
+                    old_shelf.locker_end_date = None
+                    old_shelf.locker_start_date = None
+                    old_shelf.save()
+                
+                # Assign new shelf
+                athlete.shelf = new_shelf
+                athlete.save()
+                
+                # Update locker fields
+                locker_duration = self.request.data.get('locker_duration_months')
+                locker_price = self.request.data.get('locker_price')
+                locker_end_date = self.request.data.get('locker_end_date')
+                
+                if locker_duration:
+                    new_shelf.locker_duration_months = int(locker_duration)
+                if locker_price:
+                    new_shelf.locker_price = float(locker_price)
+                if locker_end_date:
+                    new_shelf.locker_end_date = locker_end_date
+                if not new_shelf.locker_start_date:
+                    new_shelf.locker_start_date = date.today()
+                
+                new_shelf.assigned_athlete = athlete
+                new_shelf.status = 'assigned'
+                new_shelf.save()
+                
+            except (Shelf.DoesNotExist, ValueError):
+                pass
+        else:
+            # Unassigning the shelf
+            if old_shelf:
+                old_shelf.assigned_athlete = None
+                old_shelf.status = 'available'
+                old_shelf.locker_duration_months = None
+                old_shelf.locker_price = None
+                old_shelf.locker_end_date = None
+                old_shelf.locker_start_date = None
+                old_shelf.save()
+                athlete.shelf = None
+                athlete.save()
     
     @action(detail=True, methods=['post'])
     def renew(self, request, pk=None):

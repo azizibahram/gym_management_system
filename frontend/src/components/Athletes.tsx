@@ -1,12 +1,12 @@
-import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FilterList, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Search, Storage, ToggleOff, ToggleOn, VerifiedUser, Warning } from '@mui/icons-material';
+import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FilterList, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Search, Storage, ToggleOff, ToggleOn, Warning } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grid, Grow, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
-import PhotoUploader from './PhotoUploader';
-import { Grid as VirtualGrid } from 'react-window';
 import type { CellComponentProps } from 'react-window';
+import { Grid as VirtualGrid } from 'react-window';
+import PhotoUploader from './PhotoUploader';
 
 interface Payment {
   id: number;
@@ -39,6 +39,26 @@ interface Shelf {
   id: number;
   shelf_number: string;
   status: string;
+  locker_duration_months?: number;
+  locker_price?: number;
+  locker_end_date?: string;
+  locker_start_date?: string;
+}
+
+interface AthleteFormData {
+  full_name: string;
+  father_name: string;
+  photo: File | null;
+  gym_type: string;
+  gym_time: string;
+  discount: number;
+  contact_number: string;
+  notes: string;
+  shelf: string;
+  fee_deadline_date: string;
+  locker_duration_months: number;
+  locker_price: number;
+  locker_end_date: string;
 }
 
 const dialogPaperSx = {
@@ -181,10 +201,10 @@ const Athletes: React.FC = () => {
   const [reassignAthlete, setReassignAthlete] = useState<Athlete | null>(null);
   const [newShelfId, setNewShelfId] = useState('');
   const [loaded, setLoaded] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<AthleteFormData>({
     full_name: '',
     father_name: '',
-    photo: null as File | null,
+    photo: null,
     gym_type: 'fitness',
     gym_time: 'morning',
     discount: 0,
@@ -192,6 +212,9 @@ const Athletes: React.FC = () => {
     notes: '',
     shelf: '',
     fee_deadline_date: '',
+    locker_duration_months: 1,
+    locker_price: 0,
+    locker_end_date: '',
   });
 
   // Search and filter states
@@ -288,6 +311,20 @@ const Athletes: React.FC = () => {
       }
     }
   }, [location.state, athletes, hasOpenedProfile]);
+
+  // Auto-calculate locker end date when duration changes
+  useEffect(() => {
+    if (form.locker_duration_months) {
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + form.locker_duration_months);
+      const formattedEndDate = endDate.toISOString().split('T')[0];
+      setForm(prev => ({
+        ...prev,
+        locker_end_date: formattedEndDate
+      }));
+    }
+  }, [form.locker_duration_months]);
 
   // Virtualized grid: keep width and height in sync with viewport/container
   useEffect(() => {
@@ -471,7 +508,7 @@ const Athletes: React.FC = () => {
     performance.measure(measureName, startMark, endMark);
     const [measure] = performance.getEntriesByName(measureName).slice(-1);
     if (measure) {
-      // eslint-disable-next-line no-console
+
       console.log(`[Athletes] render ${id}: ${measure.duration.toFixed(2)}ms`);
     }
     performance.clearMarks(startMark);
@@ -506,6 +543,9 @@ const Athletes: React.FC = () => {
         notes: athlete.notes,
         shelf: athlete.shelf ? athlete.shelf.toString() : '',
         fee_deadline_date: athlete.fee_deadline_date || '',
+        locker_duration_months: 1,
+        locker_price: 0,
+        locker_end_date: '',
       });
     } else {
       setEditing(null);
@@ -520,6 +560,9 @@ const Athletes: React.FC = () => {
         notes: '',
         shelf: '',
         fee_deadline_date: '',
+        locker_duration_months: 1,
+        locker_price: 0,
+        locker_end_date: '',
       });
     }
     setOpen(true);
@@ -541,7 +584,15 @@ const Athletes: React.FC = () => {
     data.append('discount', form.discount.toString());
     data.append('contact_number', form.contact_number);
     data.append('notes', form.notes);
-    if (form.shelf) data.append('shelf', form.shelf);
+    if (form.shelf) {
+      data.append('shelf', form.shelf);
+      // Include locker fields when a locker is selected
+      data.append('locker_duration_months', form.locker_duration_months.toString());
+      data.append('locker_price', form.locker_price.toString());
+      if (form.locker_end_date) {
+        data.append('locker_end_date', form.locker_end_date);
+      }
+    }
     if (form.fee_deadline_date) data.append('fee_deadline_date', form.fee_deadline_date);
 
     try {
@@ -710,200 +761,201 @@ const Athletes: React.FC = () => {
               },
             }}
           >
-              {/* Photo Section - Large */}
+            {/* Photo Section - Large */}
+            <Box sx={{
+              position: 'relative',
+              height: 280,
+              background: athlete.photo
+                ? `url(${athlete.photo.startsWith('http') ? athlete.photo : `http://localhost:8000${athlete.photo}`})`
+                : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+            }}>
+              {!athlete.photo && (
+                <Avatar sx={{ width: 100, height: 100, bgcolor: 'rgba(255,255,255,0.2)' }}>
+                  <Person sx={{ fontSize: 60, color: 'white' }} />
+                </Avatar>
+              )}
+
+              {/* Active/Inactive Indicator */}
               <Box sx={{
-                position: 'relative',
-                height: 280,
-                background: athlete.photo
-                  ? `url(${athlete.photo.startsWith('http') ? athlete.photo : `http://localhost:8000${athlete.photo}`})`
-                  : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-              }}>
-                {!athlete.photo && (
-                  <Avatar sx={{ width: 100, height: 100, bgcolor: 'rgba(255,255,255,0.2)' }}>
-                    <Person sx={{ fontSize: 60, color: 'white' }} />
-                  </Avatar>
-                )}
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                background: athlete.is_active ? '#10b981' : '#94a3b8',
+                boxShadow: '0 0 0 3px rgba(255,255,255,0.3)',
+              }} />
 
-                {/* Active/Inactive Indicator */}
-                <Box sx={{
+              {/* Actions Overlay (shown on hover) */}
+              <Box
+                className="athlete-card-actions"
+                sx={{
                   position: 'absolute',
-                  top: 12,
                   left: 12,
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: athlete.is_active ? '#10b981' : '#94a3b8',
-                  boxShadow: '0 0 0 3px rgba(255,255,255,0.3)',
-                }} />
+                  right: 12,
+                  bottom: 12,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: 1,
+                  backdropFilter: 'blur(6px)',
+                  background: 'rgba(15, 23, 42, 0.35)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 2,
+                  px: 1,
+                  py: 0.5,
+                }}
+              >
+                <Tooltip title={athlete.is_active ? "Deactivate" : "Activate"}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); handleToggleStatus(athlete); }}
+                    sx={{
+                      color: 'white',
+                      '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(16, 185, 129, 0.2)' },
+                      transition: 'all 0.2s ease',
+                      width: 34,
+                      height: 34,
+                    }}
+                  >
+                    {athlete.is_active ? <ToggleOn color="success" /> : <ToggleOff color="action" />}
+                  </IconButton>
+                </Tooltip>
 
-                {/* Actions Overlay (shown on hover) */}
-                <Box
-                  className="athlete-card-actions"
-                  sx={{
-                    position: 'absolute',
-                    left: 12,
-                    right: 12,
-                    bottom: 12,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: 1,
-                    backdropFilter: 'blur(6px)',
-                    background: 'rgba(15, 23, 42, 0.35)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: 2,
-                    px: 1,
-                    py: 0.5,
-                  }}
-                >
-                  <Tooltip title={athlete.is_active ? "Deactivate" : "Activate"}>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); handleToggleStatus(athlete); }}
-                      sx={{
-                        color: 'white',
-                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(16, 185, 129, 0.2)' },
-                        transition: 'all 0.2s ease',
-                        width: 34,
-                        height: 34,
-                      }}
-                    >
-                      {athlete.is_active ? <ToggleOn color="success" /> : <ToggleOff color="action" />}
-                    </IconButton>
-                  </Tooltip>
+                <Tooltip title="Edit">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); handleOpen(athlete); }}
+                    sx={{
+                      color: 'white',
+                      '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(99, 102, 241, 0.2)' },
+                      transition: 'all 0.2s ease',
+                      width: 34,
+                      height: 34,
+                    }}
+                  >
+                    <Edit fontSize="small" />
+                  </IconButton>
+                </Tooltip>
 
-                  <Tooltip title="Edit">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); handleOpen(athlete); }}
-                      sx={{
-                        color: 'white',
-                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(99, 102, 241, 0.2)' },
-                        transition: 'all 0.2s ease',
-                        width: 34,
-                        height: 34,
-                      }}
-                    >
-                      <Edit fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                <Tooltip title="Renew Membership">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => openRenewDialog(e, athlete)}
+                    sx={{
+                      color: 'white',
+                      '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(16, 185, 129, 0.2)' },
+                      transition: 'all 0.2s ease',
+                      width: 34,
+                      height: 34,
+                    }}
+                  >
+                    <CreditCard fontSize="small" />
+                  </IconButton>
+                </Tooltip>
 
-                  <Tooltip title="Renew Membership">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => openRenewDialog(e, athlete)}
-                      sx={{
-                        color: 'white',
-                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(16, 185, 129, 0.2)' },
-                        transition: 'all 0.2s ease',
-                        width: 34,
-                        height: 34,
-                      }}
-                    >
-                      <CreditCard fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                <Tooltip title="Reassign Locker">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); handleReassignShelf(athlete); }}
+                    sx={{
+                      color: 'white',
+                      '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(59, 130, 246, 0.2)' },
+                      transition: 'all 0.2s ease',
+                      width: 34,
+                      height: 34,
+                    }}
+                  >
+                    <Storage fontSize="small" />
+                  </IconButton>
+                </Tooltip>
 
-                  <Tooltip title="Reassign Locker">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); handleReassignShelf(athlete); }}
-                      sx={{
-                        color: 'white',
-                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(59, 130, 246, 0.2)' },
-                        transition: 'all 0.2s ease',
-                        width: 34,
-                        height: 34,
-                      }}
-                    >
-                      <Storage fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                <Tooltip title="Delete">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(athlete.id); }}
+                    sx={{
+                      color: 'white',
+                      '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(239, 68, 68, 0.2)' },
+                      transition: 'all 0.2s ease',
+                      width: 34,
+                      height: 34,
+                    }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
 
-                  <Tooltip title="Delete">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(athlete.id); }}
-                      sx={{
-                        color: 'white',
-                        '&:hover': { transform: 'scale(1.1)', bgcolor: 'rgba(239, 68, 68, 0.2)' },
-                        transition: 'all 0.2s ease',
-                        width: 34,
-                        height: 34,
-                      }}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+            {/* Info Section */}
+            <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', columnGap: 1, rowGap: 0.5, alignItems: 'center' }}>
+                <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ pr: 1, lineHeight: 1.2 }}>
+                  {athlete.full_name}
+                </Typography>
+                <Box sx={{ justifySelf: 'end' }}>
+                  {getStatusChip(athlete.days_left)}
                 </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ gridColumn: '1 / -1' }}>
+                  {athlete.contact_number || 'No contact'}
+                </Typography>
               </Box>
 
-              {/* Info Section */}
-              <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', columnGap: 1, rowGap: 0.5, alignItems: 'center' }}>
-                  <Typography variant="h6" fontWeight={700} color="#1e293b" sx={{ pr: 1, lineHeight: 1.2 }}>
-                    {athlete.full_name}
+              {/* Info Grid */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 2, rowGap: 1.5, alignItems: 'start' }}>
+                <Box sx={{ display: 'grid', rowGap: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                    Gym Type
                   </Typography>
-                  <Box sx={{ justifySelf: 'end' }}>
-                    {getStatusChip(athlete.days_left)}
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ gridColumn: '1 / -1' }}>
-                    {athlete.contact_number || 'No contact'}
-                  </Typography>
+                  <Chip
+                    label={athlete.gym_type}
+                    size="small"
+                    sx={{
+                      textTransform: 'capitalize',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      background: athlete.gym_type === 'fitness'
+                        ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                        : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                      color: 'white',
+                      height: 24,
+                      alignSelf: 'flex-start',
+                    }}
+                  />
                 </Box>
 
-                {/* Info Grid */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 2, rowGap: 1.5, alignItems: 'start' }}>
-                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                      Gym Type
-                    </Typography>
-                    <Chip
-                      label={athlete.gym_type}
-                      size="small"
-                      sx={{
-                        textTransform: 'capitalize',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        background: athlete.gym_type === 'fitness'
-                          ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
-                          : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                        color: 'white',
-                        height: 24,
-                        alignSelf: 'flex-start',
-                      }}
-                    />
-                  </Box>
+                <Box sx={{ display: 'grid', rowGap: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                    Time
+                  </Typography>
+                  <Chip
+                    label={athlete.gym_time}
+                    size="small"
+                    sx={{
+                      textTransform: 'capitalize',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      background: 'rgba(99, 102, 241, 0.1)',
+                      color: '#6366f1',
+                      height: 24,
+                      alignSelf: 'flex-start',
+                    }}
+                  />
+                </Box>
 
-                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                      Time
-                    </Typography>
-                    <Chip
-                      label={athlete.gym_time}
-                      size="small"
-                      sx={{
-                        textTransform: 'capitalize',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        background: 'rgba(99, 102, 241, 0.1)',
-                        color: '#6366f1',
-                        height: 24,
-                        alignSelf: 'flex-start',
-                      }}
-                    />
-                  </Box>
-
-                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                      Locker
-                    </Typography>
-                    {athlete.shelf ? (
+                <Box sx={{ display: 'grid', rowGap: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                    Locker
+                  </Typography>
+                  {athlete.shelf ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                       <Chip
                         label={shelves.find(s => s.id === Number(athlete.shelf))?.shelf_number || athlete.shelf}
                         size="small"
@@ -916,25 +968,31 @@ const Athletes: React.FC = () => {
                           alignSelf: 'flex-start',
                         }}
                       />
-                    ) : (
-                      <Typography variant="body2" color="text.disabled">-</Typography>
-                    )}
-                  </Box>
-
-                  <Box sx={{ display: 'grid', rowGap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                      Fee Due
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600} color="#1e293b">
-                      {athlete.fee_deadline_date}
-                    </Typography>
-                  </Box>
+                      {shelves.find(s => s.id === Number(athlete.shelf))?.locker_end_date && (
+                        <Typography variant="caption" sx={{ color: shelves.find(s => s.id === Number(athlete.shelf))?.locker_end_date ? '#f59e0b' : '#94a3b8', fontWeight: 600 }}>
+                        Due: {shelves.find(s => s.id === Number(athlete.shelf))?.locker_end_date}
+                      </Typography>
+                      )}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.disabled">-</Typography>
+                  )}
                 </Box>
 
-              </CardContent>
-            </Card>
-          </Box>
+                <Box sx={{ display: 'grid', rowGap: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                    Fee Due
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600} color="#1e293b">
+                    {athlete.fee_deadline_date}
+                  </Typography>
+                </Box>
+              </Box>
+
+            </CardContent>
+          </Card>
         </Box>
+      </Box>
     );
   }, [getStatusChip, handleToggleStatus, handleOpen, openRenewDialog, handleReassignShelf, openProfile, handleDelete]);
 
@@ -1084,7 +1142,7 @@ const Athletes: React.FC = () => {
                 placeholder="Search by name, father name, or contact"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ 
+                sx={{
                   flex: 1,
                   minWidth: 280,
                   '& .MuiOutlinedInput-root': {
@@ -1099,10 +1157,10 @@ const Athletes: React.FC = () => {
                   ),
                 }}
               />
-              
-              <Button 
-                variant="contained" 
-                startIcon={<Add />} 
+
+              <Button
+                variant="contained"
+                startIcon={<Add />}
                 onClick={() => handleOpen()}
                 sx={{
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -1132,12 +1190,12 @@ const Athletes: React.FC = () => {
                 <FilterList />
                 <Typography variant="subtitle2" fontWeight={700}>Filters:</Typography>
               </Box>
-              
+
               <FormControl sx={{ minWidth: 150 }}>
                 <InputLabel size="small">Gym Type</InputLabel>
-                <Select 
-                  value={filterGymType} 
-                  onChange={(e) => setFilterGymType(e.target.value)} 
+                <Select
+                  value={filterGymType}
+                  onChange={(e) => setFilterGymType(e.target.value)}
                   label="Gym Type"
                   size="small"
                   sx={{ borderRadius: 2 }}
@@ -1150,9 +1208,9 @@ const Athletes: React.FC = () => {
 
               <FormControl sx={{ minWidth: 150 }}>
                 <InputLabel size="small">Gym Time</InputLabel>
-                <Select 
-                  value={filterGymTime} 
-                  onChange={(e) => setFilterGymTime(e.target.value)} 
+                <Select
+                  value={filterGymTime}
+                  onChange={(e) => setFilterGymTime(e.target.value)}
                   label="Gym Time"
                   size="small"
                   sx={{ borderRadius: 2 }}
@@ -1166,9 +1224,9 @@ const Athletes: React.FC = () => {
 
               <FormControl sx={{ minWidth: 180 }}>
                 <InputLabel size="small">Fee Status</InputLabel>
-                <Select 
-                  value={filterFeeStatus} 
-                  onChange={(e) => setFilterFeeStatus(e.target.value)} 
+                <Select
+                  value={filterFeeStatus}
+                  onChange={(e) => setFilterFeeStatus(e.target.value)}
                   label="Fee Status"
                   size="small"
                   sx={{ borderRadius: 2 }}
@@ -1182,8 +1240,8 @@ const Athletes: React.FC = () => {
               </FormControl>
 
               {activeFiltersCount > 0 && (
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   onClick={clearFilters}
                   size="small"
                   sx={{
@@ -1238,513 +1296,642 @@ const Athletes: React.FC = () => {
 
         {/* Add/Edit Dialog */}
         {open && (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            }
-          }}
-        >
-          <DialogTitle sx={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-            color: 'white',
-            fontWeight: 700,
-            py: 3,
-          }}>
-            {editing ? 'Edit Athlete' : 'Register New Athlete'}
-          </DialogTitle>
-          <DialogContent sx={{ pt: 4, pb: 2 }}>
-            <Grid container spacing={4}>
-              {/* Left Column - Personal Info */}
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
-                  <PhotoUploader
-                    onPhotoChange={(file) => setForm({ ...form, photo: file })}
-                    currentPhoto={editing?.photo}
-                  />
-                </Box>
-
-                <TextField
-                  label="Full Name"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  fullWidth
-                  required
-                  variant="outlined"
-                  sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Person sx={{ color: '#6366f1' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  label="Father Name"
-                  value={form.father_name}
-                  onChange={(e) => setForm({ ...form, father_name: e.target.value })}
-                  fullWidth
-                  variant="outlined"
-                  sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Person sx={{ color: '#6366f1' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  label="Contact Number"
-                  value={form.contact_number}
-                  onChange={(e) => setForm({ ...form, contact_number: e.target.value })}
-                  fullWidth
-                  variant="outlined"
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Phone sx={{ color: '#6366f1' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-
-              {/* Right Column - Gym Details */}
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Typography variant="subtitle1" sx={{ mb: 3, color: '#6366f1', fontWeight: 700, borderBottom: '2px solid #e0e7ff', pb: 1 }}>
-                  MEMBERSHIP DETAILS
-                </Typography>
-
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Gym Type</InputLabel>
-                      <Select
-                        value={form.gym_type}
-                        label="Gym Type"
-                        onChange={(e) => setForm({ ...form, gym_type: e.target.value })}
-                        startAdornment={
-                          <InputAdornment position="start">
-                            <FitnessCenter sx={{ color: '#6366f1', mr: 1 }} />
-                          </InputAdornment>
-                        }
-                        sx={{ borderRadius: 2.5 }}
-                      >
-                        <MenuItem value="fitness">Fitness</MenuItem>
-                        <MenuItem value="bodybuilding">Bodybuilding</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Gym Time</InputLabel>
-                      <Select
-                        value={form.gym_time}
-                        label="Gym Time"
-                        onChange={(e) => setForm({ ...form, gym_time: e.target.value })}
-                        startAdornment={
-                          <InputAdornment position="start">
-                            <AccessTime sx={{ color: '#6366f1', mr: 1 }} />
-                          </InputAdornment>
-                        }
-                        sx={{ borderRadius: 2.5 }}
-                      >
-                        <MenuItem value="morning">Morning</MenuItem>
-                        <MenuItem value="afternoon">Afternoon</MenuItem>
-                        <MenuItem value="night">Night</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField
-                      label="Discount"
-                      type="number"
-                      value={form.discount}
-                      onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
-                      fullWidth
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <AttachMoney sx={{ color: '#6366f1' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField
-                      label="Final Fee"
-                      value={calculateFee(form.gym_type, form.discount)}
-                      fullWidth
-                      disabled
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <AttachMoney sx={{ color: '#6366f1' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                    />
-                  </Grid>
-                </Grid>
-
-                <TextField
-                  label="Fee Deadline (Optional)"
-                  type="date"
-                  value={form.fee_deadline_date}
-                  onChange={(e) => setForm({ ...form, fee_deadline_date: e.target.value })}
-                  fullWidth
-                  sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                  InputLabelProps={{ shrink: true }}
-                  helperText="Defaults to 30 days from today"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <CalendarToday sx={{ color: '#6366f1' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <FormControl fullWidth sx={{ mb: 3 }}>
-                  <InputLabel>Assigned Locker</InputLabel>
-                  <Select
-                    value={form.shelf}
-                    label="Assigned Locker"
-                    onChange={(e) => setForm({ ...form, shelf: e.target.value })}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <Storage sx={{ color: '#6366f1', mr: 1 }} />
-                      </InputAdornment>
-                    }
-                    sx={{ borderRadius: 2.5 }}
-                  >
-                    <MenuItem value=""><em>None</em></MenuItem>
-                    {shelves && Array.isArray(shelves) && shelves.filter(s => s.status === 'available' || s.id.toString() === form.shelf).map(shelf => (
-                      <MenuItem key={shelf.id} value={String(shelf.id)}>{shelf.shelf_number}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <TextField
-                  label="Notes"
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  fullWidth
-                  multiline
-                  rows={2}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <NotesIcon sx={{ color: '#6366f1' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-        <DialogActions sx={{ px: 4, pb: 4 }}>
-          <Button onClick={handleClose} sx={buttonSecondarySx}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained"
-            sx={buttonPrimaryPurpleSx}
+          <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
+            PaperProps={{
+              sx: {
+                borderRadius: 4,
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              }
+            }}
           >
-            {editing ? 'Update' : 'Register'}
-          </Button>
-        </DialogActions>
-        </Dialog>
+            <DialogTitle sx={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              color: 'white',
+              fontWeight: 700,
+              py: 3,
+            }}>
+              {editing ? 'Edit Athlete' : 'Register New Athlete'}
+            </DialogTitle>
+            <DialogContent sx={{ pt: 4, pb: 2 }}>
+              <Grid container spacing={4}>
+                {/* Left Column - Personal Info */}
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+                    <PhotoUploader
+                      onPhotoChange={(file) => setForm({ ...form, photo: file })}
+                      currentPhoto={editing?.photo}
+                    />
+                  </Box>
+
+                  <TextField
+                    label="Full Name"
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                    fullWidth
+                    required
+                    variant="outlined"
+                    sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Person sx={{ color: '#6366f1' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  <TextField
+                    label="Father Name"
+                    value={form.father_name}
+                    onChange={(e) => setForm({ ...form, father_name: e.target.value })}
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Person sx={{ color: '#6366f1' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  <TextField
+                    label="Contact Number"
+                    value={form.contact_number}
+                    onChange={(e) => setForm({ ...form, contact_number: e.target.value })}
+                    fullWidth
+                    variant="outlined"
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Phone sx={{ color: '#6366f1' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+
+                {/* Right Column - Gym Details */}
+                <Grid size={{ xs: 12, md: 8 }}>
+                  <Typography variant="subtitle1" sx={{ mb: 3, color: '#6366f1', fontWeight: 700, borderBottom: '2px solid #e0e7ff', pb: 1 }}>
+                    MEMBERSHIP DETAILS
+                  </Typography>
+
+                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <FormControl fullWidth>
+                        <InputLabel>Gym Type</InputLabel>
+                        <Select
+                          value={form.gym_type}
+                          label="Gym Type"
+                          onChange={(e) => setForm({ ...form, gym_type: e.target.value })}
+                          startAdornment={
+                            <InputAdornment position="start">
+                              <FitnessCenter sx={{ color: '#6366f1', mr: 1 }} />
+                            </InputAdornment>
+                          }
+                          sx={{ borderRadius: 2.5 }}
+                        >
+                          <MenuItem value="fitness">Fitness</MenuItem>
+                          <MenuItem value="bodybuilding">Bodybuilding</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <FormControl fullWidth>
+                        <InputLabel>Gym Time</InputLabel>
+                        <Select
+                          value={form.gym_time}
+                          label="Gym Time"
+                          onChange={(e) => setForm({ ...form, gym_time: e.target.value })}
+                          startAdornment={
+                            <InputAdornment position="start">
+                              <AccessTime sx={{ color: '#6366f1', mr: 1 }} />
+                            </InputAdornment>
+                          }
+                          sx={{ borderRadius: 2.5 }}
+                        >
+                          <MenuItem value="morning">Morning</MenuItem>
+                          <MenuItem value="afternoon">Afternoon</MenuItem>
+                          <MenuItem value="night">Night</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+
+                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        label="Discount"
+                        type="number"
+                        value={form.discount}
+                        onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
+                        fullWidth
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <AttachMoney sx={{ color: '#6366f1' }} />
+                            </InputAdornment>
+                          ),
+                        }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        label="Final Fee"
+                        value={calculateFee(form.gym_type, form.discount)}
+                        fullWidth
+                        disabled
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <AttachMoney sx={{ color: '#6366f1' }} />
+                            </InputAdornment>
+                          ),
+                        }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <TextField
+                    label="Fee Deadline (Optional)"
+                    type="date"
+                    value={form.fee_deadline_date}
+                    onChange={(e) => setForm({ ...form, fee_deadline_date: e.target.value })}
+                    fullWidth
+                    sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                    InputLabelProps={{ shrink: true }}
+                    helperText="Defaults to 30 days from today"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CalendarToday sx={{ color: '#6366f1' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
+                  <FormControl fullWidth sx={{ mb: 3 }}>
+                    <InputLabel>Assigned Locker</InputLabel>
+                    <Select
+                      value={form.shelf}
+                      label="Assigned Locker"
+                      onChange={(e) => setForm({ ...form, shelf: e.target.value })}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <Storage sx={{ color: '#6366f1', mr: 1 }} />
+                        </InputAdornment>
+                      }
+                      sx={{ borderRadius: 2.5 }}
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {shelves && Array.isArray(shelves) && shelves.filter(s => s.status === 'available' || s.id.toString() === form.shelf).map(shelf => (
+                        <MenuItem key={shelf.id} value={String(shelf.id)}>{shelf.shelf_number}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Locker Duration & Price Section - Only show if locker is selected */}
+                  {form.shelf && (
+                    <Box sx={{ mb: 3, p: 2, backgroundColor: 'rgba(99, 102, 241, 0.05)', borderRadius: 2, border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#6366f1', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Storage /> Locker Details
+                      </Typography>
+                      
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <FormControl fullWidth>
+                            <InputLabel>Duration</InputLabel>
+                            <Select
+                              value={form.locker_duration_months}
+                              label="Duration"
+                              onChange={(e) => {
+                                const duration = Number(e.target.value);
+                                const startDate = new Date();
+                                const endDate = new Date(startDate);
+                                endDate.setMonth(endDate.getMonth() + duration);
+                                const formattedEndDate = endDate.toISOString().split('T')[0];
+                                setForm({ ...form, locker_duration_months: duration, locker_end_date: formattedEndDate });
+                              }}
+                              sx={{ borderRadius: 2.5 }}
+                            >
+                              <MenuItem value={1}>1 Month</MenuItem>
+                              <MenuItem value={3}>3 Months</MenuItem>
+                              <MenuItem value={6}>6 Months</MenuItem>
+                              <MenuItem value={12}>12 Months</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                          <TextField
+                            label="Price per Month"
+                            type="number"
+                            value={form.locker_price}
+                            onChange={(e) => setForm({ ...form, locker_price: Number(e.target.value) })}
+                            fullWidth
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <AttachMoney sx={{ color: '#6366f1' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12 }}>
+                          <TextField
+                            label="End Date"
+                            type="date"
+                            value={form.locker_end_date}
+                            onChange={(e) => setForm({ ...form, locker_end_date: e.target.value })}
+                            fullWidth
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                            InputLabelProps={{ shrink: true }}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <CalendarToday sx={{ color: '#6366f1' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12 }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            p: 2, 
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                            borderRadius: 2,
+                            border: '1px solid rgba(16, 185, 129, 0.3)'
+                          }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              Total Locker Fee:
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 800, color: '#10b981' }}>
+                              {form.locker_duration_months * Number(form.locker_price)} AFN
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  )}
+
+                  <TextField
+                    label="Notes"
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    fullWidth
+                    multiline
+                    rows={2}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <NotesIcon sx={{ color: '#6366f1' }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions sx={{ px: 4, pb: 4 }}>
+              <Button onClick={handleClose} sx={buttonSecondarySx}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                variant="contained"
+                sx={buttonPrimaryPurpleSx}
+              >
+                {editing ? 'Update' : 'Register'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         )}
 
         {/* Shelf Reassignment Dialog */}
         {reassignOpen && (
-        <Dialog open={reassignOpen} onClose={() => setReassignOpen(false)} maxWidth="sm" fullWidth
-          PaperProps={{ sx: dialogPaperSx }}
-        >
-          <DialogTitle sx={dialogTitlePurpleSx}>
-            Reassign Locker for {reassignAthlete?.full_name}
-          </DialogTitle>
-          <DialogContent sx={{ pt: 4, pb: 2 }}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Select New Locker</InputLabel>
-              <Select
-                value={newShelfId}
-                onChange={(e) => setNewShelfId(e.target.value)}
-                label="Select New Locker"
-                sx={{ borderRadius: 2.5 }}
+          <Dialog open={reassignOpen} onClose={() => setReassignOpen(false)} maxWidth="sm" fullWidth
+            PaperProps={{ sx: dialogPaperSx }}
+          >
+            <DialogTitle sx={dialogTitlePurpleSx}>
+              Reassign Locker for {reassignAthlete?.full_name}
+            </DialogTitle>
+            <DialogContent sx={{ pt: 4, pb: 2 }}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Select New Locker</InputLabel>
+                <Select
+                  value={newShelfId}
+                  onChange={(e) => setNewShelfId(e.target.value)}
+                  label="Select New Locker"
+                  sx={{ borderRadius: 2.5 }}
+                >
+                  <MenuItem value=""><em>No Locker</em></MenuItem>
+                  {shelves.filter(s => s.status === 'available' || s.id.toString() === newShelfId).map(shelf => (
+                    <MenuItem key={shelf.id} value={shelf.id}>
+                      Locker {shelf.shelf_number} - {shelf.status}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Current locker: {reassignAthlete?.shelf ? `Locker ${reassignAthlete.shelf}` : 'None'}
+              </Typography>
+            </DialogContent>
+            <DialogActions sx={{ px: 4, pb: 4 }}>
+              <Button onClick={() => setReassignOpen(false)} sx={buttonSecondarySx}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReassignSubmit}
+                variant="contained"
+                sx={buttonPrimaryPurpleSx}
               >
-                <MenuItem value=""><em>No Locker</em></MenuItem>
-                {shelves.filter(s => s.status === 'available' || s.id.toString() === newShelfId).map(shelf => (
-                  <MenuItem key={shelf.id} value={shelf.id}>
-                    Locker {shelf.shelf_number} - {shelf.status}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Current locker: {reassignAthlete?.shelf ? `Locker ${reassignAthlete.shelf}` : 'None'}
-            </Typography>
-          </DialogContent>
-          <DialogActions sx={{ px: 4, pb: 4 }}>
-            <Button onClick={() => setReassignOpen(false)} sx={buttonSecondarySx}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleReassignSubmit} 
-              variant="contained"
-              sx={buttonPrimaryPurpleSx}
-            >
-              Reassign
-            </Button>
-          </DialogActions>
-        </Dialog>
+                Reassign
+              </Button>
+            </DialogActions>
+          </Dialog>
         )}
 
         {/* Renewal Dialog */}
         {renewOpen && (
-        <Dialog open={renewOpen} onClose={() => setRenewOpen(false)}
-          PaperProps={{ sx: dialogPaperSx }}
-        >
-          <DialogTitle sx={dialogTitleGreenSx}>
-            Renew Membership
-          </DialogTitle>
-          <DialogContent sx={{ pt: 4, pb: 2, minWidth: 350 }}>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Renew membership for <strong>{renewAthlete?.full_name}</strong>?
-            </Typography>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Duration</InputLabel>
-              <Select
-                value={renewDuration}
-                label="Duration"
-                onChange={(e) => setRenewDuration(Number(e.target.value))}
-                sx={{ borderRadius: 2.5 }}
+          <Dialog open={renewOpen} onClose={() => setRenewOpen(false)}
+            PaperProps={{ sx: dialogPaperSx }}
+          >
+            <DialogTitle sx={dialogTitleGreenSx}>
+              Renew Membership
+            </DialogTitle>
+            <DialogContent sx={{ pt: 4, pb: 2, minWidth: 350 }}>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Renew membership for <strong>{renewAthlete?.full_name}</strong>?
+              </Typography>
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Duration</InputLabel>
+                <Select
+                  value={renewDuration}
+                  label="Duration"
+                  onChange={(e) => setRenewDuration(Number(e.target.value))}
+                  sx={{ borderRadius: 2.5 }}
+                >
+                  <MenuItem value={30}>1 Month (30 Days)</MenuItem>
+                  <MenuItem value={60}>2 Months (60 Days)</MenuItem>
+                  <MenuItem value={90}>3 Months (90 Days)</MenuItem>
+                  <MenuItem value={180}>6 Months (180 Days)</MenuItem>
+                  <MenuItem value={365}>1 Year (365 Days)</MenuItem>
+                </Select>
+              </FormControl>
+            </DialogContent>
+            <DialogActions sx={{ px: 4, pb: 4 }}>
+              <Button onClick={() => setRenewOpen(false)} sx={buttonSecondarySx}>
+                Cancel
+              </Button>
+              <Button
+                onClick={submitRenew}
+                variant="contained"
+                sx={buttonPrimaryGreenSx}
               >
-                <MenuItem value={30}>1 Month (30 Days)</MenuItem>
-                <MenuItem value={60}>2 Months (60 Days)</MenuItem>
-                <MenuItem value={90}>3 Months (90 Days)</MenuItem>
-                <MenuItem value={180}>6 Months (180 Days)</MenuItem>
-                <MenuItem value={365}>1 Year (365 Days)</MenuItem>
-              </Select>
-            </FormControl>
-          </DialogContent>
-          <DialogActions sx={{ px: 4, pb: 4 }}>
-            <Button onClick={() => setRenewOpen(false)} sx={buttonSecondarySx}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={submitRenew} 
-              variant="contained"
-              sx={buttonPrimaryGreenSx}
-            >
-              Confirm Renewal
-            </Button>
-          </DialogActions>
-        </Dialog>
+                Confirm Renewal
+              </Button>
+            </DialogActions>
+          </Dialog>
         )}
 
         {/* Profile Dialog */}
         {profileOpen && (
-        <Dialog open={profileOpen} onClose={() => setProfileOpen(false)} maxWidth="sm" fullWidth
-          PaperProps={{ sx: dialogPaperSx }}
-        >
-          <DialogTitle sx={{ ...dialogTitlePurpleSx, fontWeight: 500 }}>
-            Athlete Profile
-          </DialogTitle>
-          <DialogContent sx={{ pt: 0, pb: 4, bgcolor: '#f8fafc' }}>
-            {profileAthlete && (
-              <Box>
-                {/* Header Card */}
-                <Paper elevation={0} sx={{
-                  p: 3,
-                  mb: 3,
-                  mt: 3,
-                  borderRadius: 3,
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: 'linear-gradient(135deg, #fff 0%, #f0f4ff 100%)',
-                  border: '1px solid #e3e8ee',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-                }}>
-                  <Avatar
-                    src={profileAthlete.photo ? (profileAthlete.photo.startsWith('http') ? profileAthlete.photo : `http://localhost:8000${profileAthlete.photo}`) : undefined}
-                    sx={{ width: 90, height: 90, mr: 3, border: '4px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
-                  />
-                  <Box>
-                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>{profileAthlete.full_name}</Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                      <Chip
-                        label={profileAthlete.is_active ? "Active Member" : "Inactive"}
-                        color={profileAthlete.is_active ? "success" : "default"}
-                        icon={profileAthlete.is_active ? <CheckCircle /> : <Cancel />}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                      {getStatusChip(profileAthlete.days_left)}
-                    </Box>
-                  </Box>
-                </Paper>
-
-                <Grid container spacing={3}>
-                  {/* Personal Info Card */}
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Card elevation={0} sx={{ border: '1px solid #e3e8ee', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-                      <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: '#6366f1', fontWeight: 700 }}>
-                          <AccountBox /> Personal Details
-                        </Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Contact</Typography>
-                            <Typography variant="body2" fontWeight={700}>{profileAthlete.contact_number || 'N/A'}</Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Father Name</Typography>
-                            <Typography variant="body2" fontWeight={700}>{profileAthlete.father_name || 'N/A'}</Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Gym Type</Typography>
-                            <Typography variant="body2" fontWeight={700} sx={{ textTransform: 'capitalize' }}>{profileAthlete.gym_type}</Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Assigned Locker</Typography>
-                            <Chip
-                              label={profileAthlete.shelf ? `Locker ${shelves.find(s => s.id === Number(profileAthlete.shelf))?.shelf_number || profileAthlete.shelf}` : 'None'}
-                              size="small"
-                              color="primary"
-                              variant="outlined"
-                              sx={{ fontWeight: 600 }}
-                            />
-                          </Box>
-                        </Box>
-                        {profileAthlete.notes && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="caption" color="text.secondary">Notes</Typography>
-                            <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: 'pre-wrap' }}>{profileAthlete.notes}</Typography>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  {/* Membership Status Card */}
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Card elevation={0} sx={{ border: '1px solid #e3e8ee', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-                      <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: '#6366f1', fontWeight: 700 }}>
-                          <VerifiedUser /> Current Status
-                        </Typography>
-                        <Box sx={{ 
-                          bgcolor: profileAthlete.days_left < 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
-                          p: 2.5, 
-                          borderRadius: 2, 
-                          mb: 2,
-                          border: '1px solid',
-                          borderColor: profileAthlete.days_left < 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                        }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: profileAthlete.days_left < 0 ? '#ef4444' : '#10b981' }}>
-                            {profileAthlete.days_left < 0
-                              ? `${Math.abs(profileAthlete.days_left)} Days Overdue`
-                              : `${profileAthlete.days_left} Days Remaining`}
-                          </Typography>
-                          <Typography variant="body2" display="block" color="text.secondary">
-                            Deadline: {profileAthlete.fee_deadline_date}
-                          </Typography>
-                        </Box>
+          <Dialog open={profileOpen} onClose={() => setProfileOpen(false)} maxWidth="sm" fullWidth
+            PaperProps={{ sx: dialogPaperSx }}
+          >
+            <DialogTitle sx={{ ...dialogTitlePurpleSx, fontWeight: 500 }}>
+              Athlete Profile
+            </DialogTitle>
+            <DialogContent sx={{ pt: 0, pb: 4, bgcolor: '#f8fafc' }}>
+              {profileAthlete && (
+                <Box>
+                  {/* Header Card */}
+                  <Paper elevation={0} sx={{
+                    p: 3,
+                    mb: 3,
+                    mt: 3,
+                    borderRadius: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: 'linear-gradient(135deg, #fff 0%, #f0f4ff 100%)',
+                    border: '1px solid #e3e8ee',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                  }}>
+                    <Avatar
+                      src={profileAthlete.photo ? (profileAthlete.photo.startsWith('http') ? profileAthlete.photo : `http://localhost:8000${profileAthlete.photo}`) : undefined}
+                      sx={{ width: 90, height: 90, mr: 3, border: '4px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>{profileAthlete.full_name}</Typography>
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                          label={profileAthlete.is_active ? "Active" : "Inactive"}
+                          color={profileAthlete.is_active ? "success" : "default"}
+                          icon={profileAthlete.is_active ? <CheckCircle /> : <Cancel />}
+                          size="small"
+                          sx={{ fontWeight: 600 }}
+                        />
+                        <Chip
+                          label={profileAthlete.days_left < 0
+                            ? `${Math.abs(profileAthlete.days_left)} Days Overdue`
+                            : `${profileAthlete.days_left} Days Remaining`}
+                          size="small"
+                          sx={{
+                            fontWeight: 600,
+                            bgcolor: profileAthlete.days_left < 0 ? '#ef4444' : '#10b981',
+                            color: 'white',
+                          }}
+                        />
+                        <Chip
+                          label={`Fee Due: ${profileAthlete.fee_deadline_date}`}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontWeight: 600 }}
+                        />
                         {profileAthlete.days_left < 0 && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#f59e0b', p: 2, bgcolor: 'rgba(245, 158, 11, 0.1)', borderRadius: 2 }}>
-                            <AttachMoney />
-                            <Typography variant="body2" fontWeight={700}>
-                              Est. Debt: ${(Math.ceil(Math.abs(profileAthlete.days_left) / 30) * Number(profileAthlete.final_fee)).toFixed(2)}
-                            </Typography>
-                          </Box>
+                          <Chip
+                            label={`Est. Debt: ${(Math.ceil(Math.abs(profileAthlete.days_left) / 30) * Number(profileAthlete.final_fee)).toFixed(2)}`}
+                            size="small"
+                            color="warning"
+                            sx={{ fontWeight: 600 }}
+                          />
                         )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
+                      </Box>
+                    </Box>
+                  </Paper>
+                  <Grid container spacing={3}>
+                    {/* Personal Info Card */}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Card elevation={0} sx={{ border: '1px solid #e3e8ee', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                        <CardContent>
+                          <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: '#6366f1', fontWeight: 700 }}>
+                            <AccountBox /> Personal Details
+                          </Typography>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Contact</Typography>
+                              <Typography variant="body2" fontWeight={700}>{profileAthlete.contact_number || 'N/A'}</Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Father Name</Typography>
+                              <Typography variant="body2" fontWeight={700}>{profileAthlete.father_name || 'N/A'}</Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">Gym Type</Typography>
+                              <Typography variant="body2" fontWeight={700} sx={{ textTransform: 'capitalize' }}>{profileAthlete.gym_type}</Typography>
+                            </Box>
+                          </Box>
+                          {profileAthlete.notes && (
+                            <Box sx={{ mt: 2 }}>
+                              <Typography variant="caption" color="text.secondary">Notes</Typography>
+                              <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: 'pre-wrap' }}>{profileAthlete.notes}</Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
 
-                {/* Payment History Table */}
-                <Typography variant="h6" sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: '#6366f1', fontWeight: 700 }}>
-                  <History /> Payment History
-                </Typography>
-                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e3e8ee', borderRadius: 3 }}>
-                  <Table size="small">
-                    <TableHead sx={{ bgcolor: '#f8f9fa' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Amount</TableCell>
-                        <TableCell sx={{ fontWeight: 700 }}>Notes</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {profileAthlete.payments && profileAthlete.payments.length > 0 ? (
-                        profileAthlete.payments.map((payment) => (
-                          <TableRow key={payment.id} hover>
-                            <TableCell>{payment.payment_date}</TableCell>
-                            <TableCell sx={{ textTransform: 'capitalize' }}>
-                              <Chip
-                                label={payment.payment_type}
-                                size="small"
-                                color={payment.payment_type === 'renewal' ? 'success' : 'primary'}
-                                variant="outlined"
-                                sx={{ fontWeight: 600 }}
-                              />
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 600 }}>${payment.amount}</TableCell>
-                            <TableCell>{payment.notes}</TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
+
+
+                    {/* Locker Details Card */}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Card elevation={0} sx={{ border: '1px solid #e3e8ee', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                        <CardContent>
+                          <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: '#6366f1', fontWeight: 700 }}>
+                            <Storage /> Locker Details
+                          </Typography>
+                          {profileAthlete.shelf ? (
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">Locker</Typography>
+                                <Typography variant="body2" fontWeight={700}>
+                                  {shelves.find(s => s.id === Number(profileAthlete.shelf))?.shelf_number || profileAthlete.shelf}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">Status</Typography>
+                                <Chip
+                                  label={shelves.find(s => s.id === Number(profileAthlete.shelf))?.status === 'available' ? 'Available' : 'Assigned'}
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                                  sx={{ fontWeight: 600 }}
+                                />
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">Start Date</Typography>
+                                <Typography variant="body2" fontWeight={700}>
+                                  {shelves.find(s => s.id === Number(profileAthlete.shelf))?.locker_start_date || '-'}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">End Date</Typography>
+                                <Typography variant="body2" fontWeight={700} sx={{ color: '#f59e0b' }}>
+                                  {shelves.find(s => s.id === Number(profileAthlete.shelf))?.locker_end_date || '-'}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">Duration</Typography>
+                                <Typography variant="body2" fontWeight={700}>
+                                  {shelves.find(s => s.id === Number(profileAthlete.shelf))?.locker_duration_months ? `${shelves.find(s => s.id === Number(profileAthlete.shelf))?.locker_duration_months} months` : '-'}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary">Price</Typography>
+                                <Typography variant="body2" fontWeight={700}>
+                                  {shelves.find(s => s.id === Number(profileAthlete.shelf))?.locker_price ? `${shelves.find(s => s.id === Number(profileAthlete.shelf))?.locker_price} AFN` : '-'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                              No locker assigned
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  </Grid>
+
+                  {/* Payment History Table */}
+                  <Typography variant="h6" sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: '#6366f1', fontWeight: 700 }}>
+                    <History /> Payment History
+                  </Typography>
+                  <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e3e8ee', borderRadius: 3 }}>
+                    <Table size="small">
+                      <TableHead sx={{ bgcolor: '#f8f9fa' }}>
                         <TableRow>
-                          <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                            No payment history found
-                          </TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Amount</TableCell>
+                          <TableCell sx={{ fontWeight: 700 }}>Notes</TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions sx={{ px: 4, pb: 4, bgcolor: '#f8fafc' }}>
-            <Button onClick={() => setProfileOpen(false)} sx={buttonSecondarySx}>
-              Close
-            </Button>
-            <Button 
-              onClick={() => {
-                setProfileOpen(false);
-                if (profileAthlete) {
-                  setRenewAthlete(profileAthlete);
-                  setRenewDuration(30);
-                  setRenewOpen(true);
-                }
-              }}
-              variant="contained"
-              sx={buttonPrimaryPurpleSx}
-            >
-              Renew Membership
-            </Button>
-          </DialogActions>
-        </Dialog>
+                      </TableHead>
+                      <TableBody>
+                        {profileAthlete.payments && profileAthlete.payments.length > 0 ? (
+                          profileAthlete.payments.map((payment) => (
+                            <TableRow key={payment.id} hover>
+                              <TableCell>{payment.payment_date}</TableCell>
+                              <TableCell sx={{ textTransform: 'capitalize' }}>
+                                <Chip
+                                  label={payment.payment_type}
+                                  size="small"
+                                  color={payment.payment_type === 'renewal' ? 'success' : 'primary'}
+                                  variant="outlined"
+                                  sx={{ fontWeight: 600 }}
+                                />
+                              </TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>${payment.amount}</TableCell>
+                              <TableCell>{payment.notes}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                              No payment history found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions sx={{ px: 4, pb: 4, bgcolor: '#f8fafc' }}>
+              <Button onClick={() => setProfileOpen(false)} sx={buttonSecondarySx}>
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setProfileOpen(false);
+                  if (profileAthlete) {
+                    setRenewAthlete(profileAthlete);
+                    setRenewDuration(30);
+                    setRenewOpen(true);
+                  }
+                }}
+                variant="contained"
+                sx={buttonPrimaryPurpleSx}
+              >
+                Renew Membership
+              </Button>
+            </DialogActions>
+          </Dialog>
         )}
       </Container>
     </Box>

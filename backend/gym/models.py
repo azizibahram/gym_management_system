@@ -83,11 +83,23 @@ class Shelf(models.Model):
         ('available', 'Available'),
         ('assigned', 'Assigned'),
     ]
+    DURATION_CHOICES = [
+        (1, '1 Month'),
+        (3, '3 Months'),
+        (6, '6 Months'),
+        (12, '12 Months'),
+    ]
 
     shelf_number = models.CharField(max_length=10, unique=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
     assigned_athlete = models.OneToOneField(Athlete, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_shelf')
-
+    
+    # Locker-specific fields
+    locker_start_date = models.DateField(null=True, blank=True)
+    locker_end_date = models.DateField(null=True, blank=True)
+    locker_duration_months = models.IntegerField(choices=DURATION_CHOICES, null=True, blank=True)
+    locker_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=None)
+    
     def __str__(self):
         return f"Shelf {self.shelf_number}"
 

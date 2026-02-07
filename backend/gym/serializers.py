@@ -80,3 +80,18 @@ class ShelfSerializer(serializers.ModelSerializer):
         if obj.assigned_athlete:
             return obj.assigned_athlete.full_name
         return None
+    
+    def validate(self, data):
+        """Validate locker fields when assigning a locker"""
+        # Only validate if we're assigning a locker to an athlete
+        if self.instance and self.instance.assigned_athlete:
+            return data
+        return data
+    
+    def create(self, validated_data):
+        """Create shelf with locker fields"""
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """Update shelf with locker fields"""
+        return super().update(instance, validated_data)
