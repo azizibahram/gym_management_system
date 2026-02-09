@@ -1,4 +1,4 @@
-import { AccessTime, AccountBox, Add, AttachMoney, CalendarToday, Cancel, CheckCircle, CreditCard, Delete, Edit, FilterList, FitnessCenter, History, Notes as NotesIcon, Person, Phone, Search, Storage, ToggleOff, ToggleOn, Warning } from '@mui/icons-material';
+import { AccountBox, Add, Cancel, CheckCircle, CreditCard, Delete, Edit, FilterList, History, Person, Search, Storage, ToggleOff, ToggleOn, Warning } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grid, Grow, IconButton, InputAdornment, InputLabel, MenuItem, Paper, Select, Slide, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import type { CellComponentProps } from 'react-window';
 import { Grid as VirtualGrid } from 'react-window';
-import PhotoUploader from './PhotoUploader';
+import AthleteRegistrationModal from './AthleteRegistrationModal';
 
 interface Payment {
   id: number;
@@ -43,22 +43,6 @@ interface Shelf {
   locker_price?: number;
   locker_end_date?: string;
   locker_start_date?: string;
-}
-
-interface AthleteFormData {
-  full_name: string;
-  father_name: string;
-  photo: File | null;
-  gym_type: string;
-  gym_time: string;
-  discount: number;
-  contact_number: string;
-  notes: string;
-  shelf: string;
-  fee_deadline_date: string;
-  locker_duration_months: number;
-  locker_price: number;
-  locker_end_date: string;
 }
 
 const dialogPaperSx = {
@@ -201,21 +185,6 @@ const Athletes: React.FC = () => {
   const [reassignAthlete, setReassignAthlete] = useState<Athlete | null>(null);
   const [newShelfId, setNewShelfId] = useState('');
   const [loaded, setLoaded] = useState(false);
-  const [form, setForm] = useState<AthleteFormData>({
-    full_name: '',
-    father_name: '',
-    photo: null,
-    gym_type: 'fitness',
-    gym_time: 'morning',
-    discount: 0,
-    contact_number: '',
-    notes: '',
-    shelf: '',
-    fee_deadline_date: '',
-    locker_duration_months: 1,
-    locker_price: 0,
-    locker_end_date: '',
-  });
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -312,20 +281,6 @@ const Athletes: React.FC = () => {
     }
   }, [location.state, athletes, hasOpenedProfile]);
 
-  // Auto-calculate locker end date when duration changes
-  useEffect(() => {
-    if (form.locker_duration_months) {
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + form.locker_duration_months);
-      const formattedEndDate = endDate.toISOString().split('T')[0];
-      setForm(prev => ({
-        ...prev,
-        locker_end_date: formattedEndDate
-      }));
-    }
-  }, [form.locker_duration_months]);
-
   // Virtualized grid: keep width and height in sync with viewport/container
   useEffect(() => {
     const updateHeight = () => {
@@ -354,11 +309,6 @@ const Athletes: React.FC = () => {
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-
-  const calculateFee = (type: string, discount: number) => {
-    const base = type === 'fitness' ? 1000 : 700;
-    return base - discount;
-  };
 
   const openRenewDialog = (e: React.MouseEvent, athlete: Athlete) => {
     e.stopPropagation();
@@ -491,31 +441,6 @@ const Athletes: React.FC = () => {
 
   const activeFiltersCount = [filterGymType, filterGymTime, filterFeeStatus].filter(f => f).length;
 
-  // Lightweight render profiling (dev only)
-  const renderIdRef = useRef(0);
-  if (import.meta.env.DEV) {
-    renderIdRef.current += 1;
-    performance.mark(`athletes-render-start-${renderIdRef.current}`);
-  }
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    const id = renderIdRef.current;
-    const startMark = `athletes-render-start-${id}`;
-    const endMark = `athletes-render-end-${id}`;
-    const measureName = `athletes-render-${id}`;
-    performance.mark(endMark);
-    performance.measure(measureName, startMark, endMark);
-    const [measure] = performance.getEntriesByName(measureName).slice(-1);
-    if (measure) {
-
-      console.log(`[Athletes] render ${id}: ${measure.duration.toFixed(2)}ms`);
-    }
-    performance.clearMarks(startMark);
-    performance.clearMarks(endMark);
-    performance.clearMeasures(measureName);
-  });
-
   // Calculate badge counts (memoized)
   const { activeCount, criticalCount, overdueCount } = useMemo(() => {
     let active = 0;
@@ -532,38 +457,8 @@ const Athletes: React.FC = () => {
   const handleOpen = (athlete?: Athlete) => {
     if (athlete) {
       setEditing(athlete);
-      setForm({
-        full_name: athlete.full_name,
-        father_name: athlete.father_name,
-        photo: null,
-        gym_type: athlete.gym_type,
-        gym_time: athlete.gym_time,
-        discount: athlete.discount,
-        contact_number: athlete.contact_number,
-        notes: athlete.notes,
-        shelf: athlete.shelf ? athlete.shelf.toString() : '',
-        fee_deadline_date: athlete.fee_deadline_date || '',
-        locker_duration_months: 1,
-        locker_price: 0,
-        locker_end_date: '',
-      });
     } else {
       setEditing(null);
-      setForm({
-        full_name: '',
-        father_name: '',
-        photo: null,
-        gym_type: 'fitness',
-        gym_time: 'morning',
-        discount: 0,
-        contact_number: '',
-        notes: '',
-        shelf: '',
-        fee_deadline_date: '',
-        locker_duration_months: 1,
-        locker_price: 0,
-        locker_end_date: '',
-      });
     }
     setOpen(true);
   };
@@ -573,46 +468,8 @@ const Athletes: React.FC = () => {
     setEditing(null);
   };
 
-  const handleSubmit = async () => {
-    const token = localStorage.getItem('token');
-    const data = new FormData();
-    data.append('full_name', form.full_name);
-    data.append('father_name', form.father_name);
-    if (form.photo) data.append('photo', form.photo);
-    data.append('gym_type', form.gym_type);
-    data.append('gym_time', form.gym_time);
-    data.append('discount', form.discount.toString());
-    data.append('contact_number', form.contact_number);
-    data.append('notes', form.notes);
-    if (form.shelf) {
-      data.append('shelf', form.shelf);
-      // Include locker fields when a locker is selected
-      data.append('locker_duration_months', form.locker_duration_months.toString());
-      data.append('locker_price', form.locker_price.toString());
-      if (form.locker_end_date) {
-        data.append('locker_end_date', form.locker_end_date);
-      }
-    }
-    if (form.fee_deadline_date) data.append('fee_deadline_date', form.fee_deadline_date);
-
-    try {
-      if (editing) {
-        await axios.put(`http://localhost:8000/api/athletes/${editing.id}/`, data, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        toast.success(`Athlete "${form.full_name}" updated successfully!`);
-      } else {
-        await axios.post('http://localhost:8000/api/athletes/', data, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        toast.success(`Athlete "${form.full_name}" registered successfully!`);
-      }
-      handleClose();
-      fetchAthletes();
-    } catch (error) {
-      toast.error('Failed to save athlete. Please try again.');
-      console.error('Error saving athlete:', error);
-    }
+  const handleModalSuccess = () => {
+    fetchAthletes();
   };
 
   const handleDelete = async (id: number) => {
@@ -1295,331 +1152,13 @@ const Athletes: React.FC = () => {
         </Fade>
 
         {/* Add/Edit Dialog */}
-        {open && (
-          <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
-            PaperProps={{
-              sx: {
-                borderRadius: 4,
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-              }
-            }}
-          >
-            <DialogTitle sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              color: 'white',
-              fontWeight: 700,
-              py: 3,
-            }}>
-              {editing ? 'Edit Athlete' : 'Register New Athlete'}
-            </DialogTitle>
-            <DialogContent sx={{ pt: 4, pb: 2 }}>
-              <Grid container spacing={4}>
-                {/* Left Column - Personal Info */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
-                    <PhotoUploader
-                      onPhotoChange={(file) => setForm({ ...form, photo: file })}
-                      currentPhoto={editing?.photo}
-                    />
-                  </Box>
-
-                  <TextField
-                    label="Full Name"
-                    value={form.full_name}
-                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                    fullWidth
-                    required
-                    variant="outlined"
-                    sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person sx={{ color: '#6366f1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
-                  <TextField
-                    label="Father Name"
-                    value={form.father_name}
-                    onChange={(e) => setForm({ ...form, father_name: e.target.value })}
-                    fullWidth
-                    variant="outlined"
-                    sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Person sx={{ color: '#6366f1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
-                  <TextField
-                    label="Contact Number"
-                    value={form.contact_number}
-                    onChange={(e) => setForm({ ...form, contact_number: e.target.value })}
-                    fullWidth
-                    variant="outlined"
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Phone sx={{ color: '#6366f1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-
-                {/* Right Column - Gym Details */}
-                <Grid size={{ xs: 12, md: 8 }}>
-                  <Typography variant="subtitle1" sx={{ mb: 3, color: '#6366f1', fontWeight: 700, borderBottom: '2px solid #e0e7ff', pb: 1 }}>
-                    MEMBERSHIP DETAILS
-                  </Typography>
-
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <FormControl fullWidth>
-                        <InputLabel>Gym Type</InputLabel>
-                        <Select
-                          value={form.gym_type}
-                          label="Gym Type"
-                          onChange={(e) => setForm({ ...form, gym_type: e.target.value })}
-                          startAdornment={
-                            <InputAdornment position="start">
-                              <FitnessCenter sx={{ color: '#6366f1', mr: 1 }} />
-                            </InputAdornment>
-                          }
-                          sx={{ borderRadius: 2.5 }}
-                        >
-                          <MenuItem value="fitness">Fitness</MenuItem>
-                          <MenuItem value="bodybuilding">Bodybuilding</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <FormControl fullWidth>
-                        <InputLabel>Gym Time</InputLabel>
-                        <Select
-                          value={form.gym_time}
-                          label="Gym Time"
-                          onChange={(e) => setForm({ ...form, gym_time: e.target.value })}
-                          startAdornment={
-                            <InputAdornment position="start">
-                              <AccessTime sx={{ color: '#6366f1', mr: 1 }} />
-                            </InputAdornment>
-                          }
-                          sx={{ borderRadius: 2.5 }}
-                        >
-                          <MenuItem value="morning">Morning</MenuItem>
-                          <MenuItem value="afternoon">Afternoon</MenuItem>
-                          <MenuItem value="night">Night</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                  </Grid>
-
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <TextField
-                        label="Discount"
-                        type="number"
-                        value={form.discount}
-                        onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <AttachMoney sx={{ color: '#6366f1' }} />
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <TextField
-                        label="Final Fee"
-                        value={calculateFee(form.gym_type, form.discount)}
-                        fullWidth
-                        disabled
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <AttachMoney sx={{ color: '#6366f1' }} />
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                      />
-                    </Grid>
-                  </Grid>
-
-                  <TextField
-                    label="Fee Deadline (Optional)"
-                    type="date"
-                    value={form.fee_deadline_date}
-                    onChange={(e) => setForm({ ...form, fee_deadline_date: e.target.value })}
-                    fullWidth
-                    sx={{ mb: 3, '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                    InputLabelProps={{ shrink: true }}
-                    helperText="Defaults to 30 days from today"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <CalendarToday sx={{ color: '#6366f1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-
-                  <FormControl fullWidth sx={{ mb: 3 }}>
-                    <InputLabel>Assigned Locker</InputLabel>
-                    <Select
-                      value={form.shelf}
-                      label="Assigned Locker"
-                      onChange={(e) => setForm({ ...form, shelf: e.target.value })}
-                      startAdornment={
-                        <InputAdornment position="start">
-                          <Storage sx={{ color: '#6366f1', mr: 1 }} />
-                        </InputAdornment>
-                      }
-                      sx={{ borderRadius: 2.5 }}
-                    >
-                      <MenuItem value=""><em>None</em></MenuItem>
-                      {shelves && Array.isArray(shelves) && shelves.filter(s => s.status === 'available' || s.id.toString() === form.shelf).map(shelf => (
-                        <MenuItem key={shelf.id} value={String(shelf.id)}>{shelf.shelf_number}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  {/* Locker Duration & Price Section - Only show if locker is selected */}
-                  {form.shelf && (
-                    <Box sx={{ mb: 3, p: 2, backgroundColor: 'rgba(99, 102, 241, 0.05)', borderRadius: 2, border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#6366f1', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Storage /> Locker Details
-                      </Typography>
-                      
-                      <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                          <FormControl fullWidth>
-                            <InputLabel>Duration</InputLabel>
-                            <Select
-                              value={form.locker_duration_months}
-                              label="Duration"
-                              onChange={(e) => {
-                                const duration = Number(e.target.value);
-                                const startDate = new Date();
-                                const endDate = new Date(startDate);
-                                endDate.setMonth(endDate.getMonth() + duration);
-                                const formattedEndDate = endDate.toISOString().split('T')[0];
-                                setForm({ ...form, locker_duration_months: duration, locker_end_date: formattedEndDate });
-                              }}
-                              sx={{ borderRadius: 2.5 }}
-                            >
-                              <MenuItem value={1}>1 Month</MenuItem>
-                              <MenuItem value={3}>3 Months</MenuItem>
-                              <MenuItem value={6}>6 Months</MenuItem>
-                              <MenuItem value={12}>12 Months</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                        
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                          <TextField
-                            label="Price per Month"
-                            type="number"
-                            value={form.locker_price}
-                            onChange={(e) => setForm({ ...form, locker_price: Number(e.target.value) })}
-                            fullWidth
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <AttachMoney sx={{ color: '#6366f1' }} />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </Grid>
-                        
-                        <Grid size={{ xs: 12 }}>
-                          <TextField
-                            label="End Date"
-                            type="date"
-                            value={form.locker_end_date}
-                            onChange={(e) => setForm({ ...form, locker_end_date: e.target.value })}
-                            fullWidth
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                            InputLabelProps={{ shrink: true }}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <CalendarToday sx={{ color: '#6366f1' }} />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </Grid>
-                        
-                        <Grid size={{ xs: 12 }}>
-                          <Box sx={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center',
-                            p: 2, 
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                            borderRadius: 2,
-                            border: '1px solid rgba(16, 185, 129, 0.3)'
-                          }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              Total Locker Fee:
-                            </Typography>
-                            <Typography variant="h5" sx={{ fontWeight: 800, color: '#10b981' }}>
-                              {form.locker_duration_months * Number(form.locker_price)} AFN
-                            </Typography>
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  )}
-
-                  <TextField
-                    label="Notes"
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <NotesIcon sx={{ color: '#6366f1' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
-                  />
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions sx={{ px: 4, pb: 4 }}>
-              <Button onClick={handleClose} sx={buttonSecondarySx}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                variant="contained"
-                sx={buttonPrimaryPurpleSx}
-              >
-                {editing ? 'Update' : 'Register'}
-              </Button>
-            </DialogActions>
-          </Dialog>
-        )}
+        <AthleteRegistrationModal
+          open={open}
+          onClose={handleClose}
+          editing={editing}
+          shelves={shelves}
+          onSuccess={handleModalSuccess}
+        />
 
         {/* Shelf Reassignment Dialog */}
         {reassignOpen && (
