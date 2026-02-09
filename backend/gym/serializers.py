@@ -14,6 +14,7 @@ class AthleteSerializer(serializers.ModelSerializer):
     days_left = serializers.ReadOnlyField()
     fee_deadline_date = serializers.DateField(required=False)
     final_fee = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    debt = serializers.DecimalField(max_digits=10, decimal_places=2, default=0)
     payments = PaymentSerializer(many=True, read_only=True)
 
     class Meta:
@@ -24,11 +25,12 @@ class AthleteSerializer(serializers.ModelSerializer):
         # Calculate final fee
         gym_type = validated_data.get('gym_type')
         discount = validated_data.get('discount', 0)
+        debt = validated_data.get('debt', 0)
         if gym_type == 'fitness':
             base_fee = 1000
         else:
             base_fee = 700
-        final_fee = base_fee - discount
+        final_fee = base_fee - discount - debt
         
         # Set auto-calculated fields
         validated_data['final_fee'] = final_fee
@@ -43,12 +45,13 @@ class AthleteSerializer(serializers.ModelSerializer):
         # Recalculate final fee if gym_type or discount changed
         gym_type = validated_data.get('gym_type', instance.gym_type)
         discount = validated_data.get('discount', instance.discount)
+        debt = validated_data.get('debt', instance.debt)
         
         if gym_type == 'fitness':
             base_fee = 1000
         else:
             base_fee = 700
-        final_fee = base_fee - discount
+        final_fee = base_fee - discount - debt
         
         validated_data['final_fee'] = final_fee
         

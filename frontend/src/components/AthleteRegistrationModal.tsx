@@ -25,6 +25,7 @@ interface Athlete {
   gym_type: string;
   gym_time: string;
   discount: number;
+  debt: number;
   final_fee: number;
   contact_number: string;
   notes: string;
@@ -40,6 +41,7 @@ interface AthleteFormData {
   gym_type: string;
   gym_time: string;
   discount: number;
+  debt: number;
   contact_number: string;
   notes: string;
   shelf: string;
@@ -73,6 +75,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
     gym_type: editing?.gym_type || 'fitness',
     gym_time: editing?.gym_time || 'morning',
     discount: editing?.discount || 0,
+    debt: editing?.debt || 0,
     contact_number: editing?.contact_number || '',
     notes: editing?.notes || '',
     shelf: editing?.shelf ? String(editing.shelf) : '',
@@ -94,6 +97,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
         gym_type: editing?.gym_type || 'fitness',
         gym_time: editing?.gym_time || 'morning',
         discount: editing?.discount || 0,
+        debt: editing?.debt || 0,
         contact_number: editing?.contact_number || '',
         notes: editing?.notes || '',
         shelf: editing?.shelf ? String(editing.shelf) : '',
@@ -145,6 +149,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
     data.append('gym_type', form.gym_type);
     data.append('gym_time', form.gym_time);
     data.append('discount', form.discount.toString());
+    data.append('debt', form.debt.toString());
     data.append('contact_number', form.contact_number);
     data.append('notes', form.notes);
     if (form.shelf) {
@@ -301,7 +306,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
             </Grid>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   label="Discount"
                   type="number"
@@ -318,7 +323,25 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
                 />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  label="Debt"
+                  type="number"
+                  value={form.debt}
+                  onChange={(e) => setForm(prev => ({ ...prev, debt: Number(e.target.value) }))}
+                  fullWidth
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AttachMoney sx={{ color: '#ef4444' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                  helperText="Subtracts from fee"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   label="Final Fee"
                   value={finalFee}
@@ -327,7 +350,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <AttachMoney sx={{ color: '#6366f1' }} />
+                        <AttachMoney sx={{ color: '#10b981' }} />
                       </InputAdornment>
                     ),
                   }}

@@ -100,15 +100,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Slide in={loaded} direction="down" timeout={500}>
           <Box
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: '#6366f1',
               borderRadius: 4,
               border: '1px solid rgba(255,255,255,0.2)',
-              boxShadow: '0 8px 32px rgba(99, 102, 241, 0.3), 0 0 0 1px rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(99, 102, 241, 0.3)',
               px: 3,
               py: 1.5,
               display: 'flex',
               alignItems: 'center',
-              backdropFilter: 'blur(20px)',
             }}
           >
             {/* Logo Section */}
@@ -121,14 +120,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   width: 45,
                   height: 45,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.9) 100%)',
+                  background: '#fff',
                   mr: 2,
                   boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                  animation: 'pulse 3s ease-in-out infinite',
-                  '@keyframes pulse': {
-                    '0%, 100%': { transform: 'scale(1)' },
-                    '50%': { transform: 'scale(1.05)' },
-                  },
                 }}
               >
                 <FitnessCenter sx={{ fontSize: 24, color: '#6366f1' }} />
@@ -216,7 +210,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   color="error"
                   sx={{
                     '& .MuiBadge-badge': {
-                      animation: alerts.length > 0 ? 'pulse 2s infinite' : 'none',
                       minWidth: '18px',
                       height: '18px',
                       fontSize: '0.7rem',

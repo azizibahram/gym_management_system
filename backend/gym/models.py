@@ -24,6 +24,7 @@ class Athlete(models.Model):
     gym_time = models.CharField(max_length=20, choices=GYM_TIME_CHOICES)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     final_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    debt = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Outstanding debt amount')
     contact_number = models.CharField(max_length=15, blank=True)
     notes = models.TextField(blank=True)
     shelf = models.OneToOneField('Shelf', on_delete=models.SET_NULL, null=True, blank=True)
