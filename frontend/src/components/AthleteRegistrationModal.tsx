@@ -126,8 +126,8 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
   // Memoized fee calculation
   const finalFee = useMemo(() => {
     const base = form.gym_type === 'fitness' ? 1000 : 700;
-    return base - form.discount;
-  }, [form.gym_type, form.discount]);
+    return base - form.discount - form.debt;
+  }, [form.gym_type, form.discount, form.debt]);
 
   // Memoized locker total
   const lockerTotal = useMemo(() => {

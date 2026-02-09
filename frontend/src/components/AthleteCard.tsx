@@ -52,7 +52,7 @@ interface AthleteCardProps {
   getStatusChip: (daysLeft: number) => React.ReactNode;
 }
 
-const CARD_HEIGHT = 440;
+const CARD_HEIGHT = 480;
 const GRID_GAP = 16;
 
 const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
@@ -202,40 +202,40 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
           {/* Gym Type */}
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
               Gym Type
             </Typography>
             <Chip
               label={athlete.gym_type}
               size="small"
               sx={{
-                mt: 0.5,
                 textTransform: 'capitalize',
                 fontWeight: 600,
                 fontSize: '0.75rem',
                 background: athlete.gym_type === 'fitness' ? '#6366f1' : '#ec4899',
                 color: 'white',
                 height: 24,
+                mt: 0,
               }}
             />
           </Box>
 
           {/* Contact */}
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
               Contact
             </Typography>
-            <Typography variant="body2" fontWeight={600} color="#1e293b" sx={{ mt: 0.5 }}>
+            <Typography variant="body2" fontWeight={600} color="#1e293b">
               {athlete.contact_number || 'N/A'}
             </Typography>
           </Box>
 
           {/* Fee Due */}
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
               Fee Due
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CreditCard sx={{ fontSize: 16, color: '#10b981' }} />
               <Typography variant="body2" fontWeight={600} color="#10b981">
                 {athlete.fee_deadline_date}
@@ -245,10 +245,10 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
 
           {/* Locker Deadline */}
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 0.5 }}>
               Locker Deadline
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Storage sx={{ fontSize: 16, color: '#6366f1' }} />
               <Typography variant="body2" fontWeight={600} color="#1e293b">
                 {athleteShelf?.locker_end_date || 'N/A'}
