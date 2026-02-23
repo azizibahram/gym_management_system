@@ -471,6 +471,7 @@ const Athletes: React.FC = () => {
 
   const handleModalSuccess = () => {
     fetchAthletes();
+    fetchShelves();
   };
 
   const handleDelete = async (id: number) => {

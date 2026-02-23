@@ -90,6 +90,12 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
   // Reset form when modal opens with editing data
   React.useEffect(() => {
     if (open) {
+      // Find the shelf data if editing an athlete with a locker
+      let shelfData = null;
+      if (editing?.shelf) {
+        shelfData = shelves.find(s => s.id === Number(editing.shelf));
+      }
+      
       setForm({
         full_name: editing?.full_name || '',
         father_name: editing?.father_name || '',
@@ -102,12 +108,12 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
         notes: editing?.notes || '',
         shelf: editing?.shelf ? String(editing.shelf) : '',
         fee_deadline_date: editing?.fee_deadline_date || '',
-        locker_duration_months: 1,
-        locker_price: 0,
-        locker_end_date: '',
+        locker_duration_months: shelfData?.locker_duration_months || 1,
+        locker_price: shelfData?.locker_price || 0,
+        locker_end_date: shelfData?.locker_end_date || '',
       });
     }
-  }, [open, editing]);
+  }, [open, editing, shelves]);
 
   // Auto-calculate locker end date when duration changes
   React.useEffect(() => {
