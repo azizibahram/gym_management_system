@@ -19,8 +19,8 @@ class AthleteFilter(filters.FilterSet):
         Filter athletes by fee status:
         - 'safe': 16+ days remaining
         - 'warning': 6-15 days remaining
-        - 'critical': 1-5 days remaining
-        - 'overdue': 0 or negative days remaining
+        - 'critical': 0-5 days remaining (includes expiring today)
+        - 'overdue': past deadline (negative days)
         """
         today = date.today()
         
@@ -34,12 +34,11 @@ class AthleteFilter(filters.FilterSet):
             end_date = today + timedelta(days=15)
             return queryset.filter(fee_deadline_date__gte=start_date, fee_deadline_date__lte=end_date)
         elif value == 'critical':
-            # 1-5 days remaining
-            start_date = today + timedelta(days=1)
+            # 0-5 days remaining (includes expiring today)
             end_date = today + timedelta(days=5)
-            return queryset.filter(fee_deadline_date__gte=start_date, fee_deadline_date__lte=end_date)
+            return queryset.filter(fee_deadline_date__gte=today, fee_deadline_date__lte=end_date)
         elif value == 'overdue':
-            # 0 or negative days (overdue)
+            # Strictly past deadline (fee_deadline_date < today)
             return queryset.filter(fee_deadline_date__lt=today)
         
         return queryset

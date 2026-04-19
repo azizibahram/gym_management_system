@@ -16,6 +16,7 @@ interface Athlete {
   father_name: string;
   photo: string | null;
   registration_date: string;
+  fee_start_date: string;
   fee_deadline_date: string;
   gym_type: string;
   gym_time: string;
@@ -199,6 +200,18 @@ const AthleteProfile: React.FC<AthleteProfileProps> = React.memo(({
                         {athlete.debt > 0 ? `${athlete.debt} AFN` : 'No Debt'}
                       </Typography>
                     </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Fee Start</Typography>
+                      <Typography variant="body2" fontWeight={700}>{athlete.fee_start_date || 'N/A'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Registered</Typography>
+                      <Typography variant="body2" fontWeight={700}>
+                        {athlete.registration_date
+                          ? new Date(athlete.registration_date).toLocaleDateString()
+                          : 'N/A'}
+                      </Typography>
+                    </Box>
                   </Box>
                   {athlete.notes && (
                     <Box sx={{ mt: 2 }}>
@@ -322,7 +335,7 @@ const AthleteProfile: React.FC<AthleteProfileProps> = React.memo(({
                           sx={{ fontWeight: 600 }}
                         />
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>${payment.amount}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{payment.amount} AFN</TableCell>
                       <TableCell>{payment.notes}</TableCell>
                     </TableRow>
                   ))

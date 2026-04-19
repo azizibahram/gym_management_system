@@ -1,12 +1,10 @@
 import { Add, Cancel, CheckCircle, FilterList, Search, Warning } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grow, InputAdornment, InputLabel, MenuItem, Paper, Select, Slide, TextField, Typography } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
-import type { CellComponentProps } from 'react-window';
-import { Grid as VirtualGrid } from 'react-window';
-import AthleteCard, { CARD_HEIGHT, GRID_GAP } from './AthleteCard';
+import AthleteCard, { GRID_GAP } from './AthleteCard';
 import AthleteProfile from './AthleteProfile';
 import AthleteRegistrationModal from './AthleteRegistrationModal';
 
@@ -24,6 +22,7 @@ interface Athlete {
   father_name: string;
   photo: string | null;
   registration_date: string;
+  fee_start_date: string;
   fee_deadline_date: string;
   gym_type: string;
   gym_time: string;
@@ -174,7 +173,6 @@ const statusTextActiveSx = {
   fontSize: '0.7rem',
 };
 
-const CARD_MIN_WIDTH = 320;
 
 const Athletes: React.FC = () => {
   const location = useLocation();
@@ -196,11 +194,6 @@ const Athletes: React.FC = () => {
   // Sorting states
   const [sortField] = useState<string>('');
   const [sortDirection] = useState<'asc' | 'desc'>('asc');
-
-  // Virtualized grid sizing
-  const [gridWidth, setGridWidth] = useState(1200);
-  const [gridHeight, setGridHeight] = useState(720);
-  const gridOuterRef = useRef<HTMLDivElement>(null);
 
   // Renewal & Profile State
   const [renewOpen, setRenewOpen] = useState(false);
@@ -281,35 +274,6 @@ const Athletes: React.FC = () => {
       }
     }
   }, [location.state, athletes, hasOpenedProfile]);
-
-  // Virtualized grid: keep width and height in sync with viewport/container
-  useEffect(() => {
-    const updateHeight = () => {
-      const nextHeight = Math.max(520, window.innerHeight - 320);
-      setGridHeight(nextHeight);
-    };
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
-  }, []);
-
-  useEffect(() => {
-    const node = gridOuterRef.current;
-    if (!node) {
-      setGridWidth(window.innerWidth);
-      return;
-    }
-    if (typeof ResizeObserver === 'undefined') {
-      setGridWidth(node.clientWidth);
-      return;
-    }
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) setGridWidth(entry.contentRect.width);
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   const openRenewDialog = (e: React.MouseEvent, athlete: Athlete) => {
     e.stopPropagation();
@@ -558,57 +522,6 @@ const Athletes: React.FC = () => {
       delay: 300,
     },
   ], [activeCount, criticalCount, overdueCount]);
-
-  const columnCount = useMemo(() => {
-    return Math.max(1, Math.floor((gridWidth + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP)));
-  }, [gridWidth]);
-
-  const columnWidth = useMemo(() => {
-    const gaps = GRID_GAP * (columnCount - 1);
-    return Math.max(CARD_MIN_WIDTH, Math.floor((gridWidth - gaps) / columnCount));
-  }, [gridWidth, columnCount]);
-
-  const rowCount = useMemo(() => {
-    return Math.ceil(sortedAthletes.length / columnCount);
-  }, [sortedAthletes.length, columnCount]);
-
-  const gridCellProps = useMemo(() => {
-    return {
-      athletes: sortedAthletes,
-      columnCount,
-      shelves,
-    };
-  }, [sortedAthletes, columnCount, shelves]);
-
-  const renderCardCell = React.useCallback((props: CellComponentProps<{
-    athletes: Athlete[];
-    columnCount: number;
-    shelves: Shelf[];
-  }>) => {
-    const { columnIndex, rowIndex, style, athletes, columnCount, shelves } = props;
-    const index = rowIndex * columnCount + columnIndex;
-    if (index >= athletes.length) return null;
-    const athlete = athletes[index];
-    const shelf = shelves.find(s => s.id === athlete.shelf);
-    
-    return (
-      <Box style={style}>
-        <Box style={{ paddingRight: GRID_GAP, paddingBottom: GRID_GAP, height: '100%', boxSizing: 'border-box' }}>
-          <AthleteCard
-            athlete={athlete}
-            shelf={shelf}
-            onCardClick={() => openProfile(athlete)}
-            onToggleStatus={() => handleToggleStatus(athlete)}
-            onEdit={() => handleOpen(athlete)}
-            onRenew={(e?: React.MouseEvent) => openRenewDialog(e!, athlete)}
-            onReassignShelf={() => handleReassignShelf(athlete)}
-            onDelete={() => handleDelete(athlete.id)}
-            getStatusChip={getStatusChip}
-          />
-        </Box>
-      </Box>
-    );
-  }, [getStatusChip, handleToggleStatus, handleOpen, openRenewDialog, handleReassignShelf, openProfile, handleDelete]);
 
   return (
     <Box sx={{ minHeight: '100vh', py: 2 }}>
@@ -885,21 +798,30 @@ const Athletes: React.FC = () => {
               </Typography>
             </Box>
 
-            <Box ref={gridOuterRef}>
-              <VirtualGrid
-                columnCount={columnCount}
-                columnWidth={columnWidth}
-                defaultHeight={gridHeight}
-                rowCount={rowCount}
-                rowHeight={CARD_HEIGHT + GRID_GAP}
-                defaultWidth={gridWidth}
-                style={{ height: gridHeight, width: '100%' }}
-                cellComponent={renderCardCell}
-                cellProps={gridCellProps}
-              >
-              </VirtualGrid>
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: `${GRID_GAP}px`,
+            }}>
+              {sortedAthletes.map((athlete) => {
+                const shelf = shelves.find(s => s.id === athlete.shelf);
+                return (
+                  <AthleteCard
+                    key={athlete.id}
+                    athlete={athlete}
+                    shelf={shelf}
+                    onCardClick={() => openProfile(athlete)}
+                    onToggleStatus={() => handleToggleStatus(athlete)}
+                    onEdit={() => handleOpen(athlete)}
+                    onRenew={(e?: React.MouseEvent) => openRenewDialog(e!, athlete)}
+                    onReassignShelf={() => handleReassignShelf(athlete)}
+                    onDelete={() => handleDelete(athlete.id)}
+                    getStatusChip={getStatusChip}
+                  />
+                );
+              })}
             </Box>
-            {/* Show count of displayed items */}
+
             <Box sx={{ textAlign: 'center', py: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 Showing {sortedAthletes.length} of {sortedAthletes.length} athletes

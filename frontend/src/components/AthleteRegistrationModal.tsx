@@ -115,19 +115,37 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
     }
   }, [open, editing, shelves]);
 
-  // Auto-calculate locker end date when duration changes
+  // Auto-calculate locker end date when duration or shelf changes.
+  // Uses the existing locker_start_date when editing, otherwise today.
+  // Uses day-safe month addition to avoid month-overflow (e.g. Jan 31 + 1 month → Feb 28).
   React.useEffect(() => {
     if (form.locker_duration_months && form.shelf) {
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + form.locker_duration_months);
+      // Determine the start: use the saved start date when editing, otherwise today
+      let shelfData: Shelf | undefined;
+      // Only use the saved start date if the shelf hasn't changed from the original
+      if (editing?.shelf && String(editing.shelf) === form.shelf) {
+        shelfData = shelves.find(s => s.id === Number(editing.shelf));
+      }
+      const startStr = shelfData?.locker_start_date;
+      const startDate = startStr ? new Date(`${startStr}T00:00:00`) : new Date();
+
+      // Day-safe month addition: clamp to last day of target month
+      const year = startDate.getFullYear();
+      const month = startDate.getMonth(); // 0-indexed
+      const day = startDate.getDate();
+      const targetMonth = month + form.locker_duration_months;
+      // Last day of the target month
+      const lastDayOfTarget = new Date(year, targetMonth + 1, 0).getDate();
+      const endDay = Math.min(day, lastDayOfTarget);
+      const endDate = new Date(year, targetMonth, endDay);
+
       const formattedEndDate = endDate.toISOString().split('T')[0];
       setForm(prev => ({
         ...prev,
-        locker_end_date: formattedEndDate
+        locker_end_date: formattedEndDate,
       }));
     }
-  }, [form.locker_duration_months, form.shelf]);
+  }, [form.locker_duration_months, form.shelf, editing, shelves]);
 
   // Memoized fee calculation
   const finalFee = useMemo(() => {
@@ -166,7 +184,19 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
         data.append('locker_end_date', form.locker_end_date);
       }
     }
-    if (form.fee_deadline_date) data.append('fee_deadline_date', form.fee_deadline_date);
+    // Always send fee_deadline_date when editing so the backend never silently
+    // falls back to the stale stored value. For new registrations, only send
+    // it when the user has explicitly set one (backend defaults to today+30).
+    if (editing) {
+      // On edit: send whatever is in the field (could be unchanged original value)
+      if (form.fee_deadline_date) {
+        data.append('fee_deadline_date', form.fee_deadline_date);
+      }
+      // If the field was cleared, omit it — backend will preserve the existing date
+    } else {
+      // On create: only send if the user explicitly picked a date
+      if (form.fee_deadline_date) data.append('fee_deadline_date', form.fee_deadline_date);
+    }
 
     try {
       if (editing) {
