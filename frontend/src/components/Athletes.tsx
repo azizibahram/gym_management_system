@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import AthleteCard, { GRID_GAP } from './AthleteCard';
+import AthleteCardSkeleton from './AthleteCardSkeleton';
 import AthleteProfile from './AthleteProfile';
 import AthleteRegistrationModal from './AthleteRegistrationModal';
 
@@ -121,58 +122,6 @@ const headerContainerSx = {
   },
 };
 
-const statusChipOverdueSx = {
-  background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
-  color: 'white',
-  fontWeight: 700,
-  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
-};
-
-const statusChipCriticalSx = {
-  background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
-  color: 'white',
-  fontWeight: 700,
-  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
-};
-
-const statusChipWarningSx = {
-  background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
-  color: 'white',
-  fontWeight: 700,
-  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
-};
-
-const statusChipActiveSx = {
-  background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
-  color: 'white',
-  fontWeight: 700,
-  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-};
-
-const statusTextOverdueSx = {
-  color: '#ef4444',
-  fontWeight: 600,
-  fontSize: '0.7rem',
-};
-
-const statusTextCriticalSx = {
-  color: '#f59e0b',
-  fontWeight: 600,
-  fontSize: '0.7rem',
-};
-
-const statusTextWarningSx = {
-  color: '#3b82f6',
-  fontWeight: 600,
-  fontSize: '0.7rem',
-};
-
-const statusTextActiveSx = {
-  color: '#10b981',
-  fontWeight: 600,
-  fontSize: '0.7rem',
-};
-
 
 const Athletes: React.FC = () => {
   const location = useLocation();
@@ -184,6 +133,7 @@ const Athletes: React.FC = () => {
   const [reassignAthlete, setReassignAthlete] = useState<Athlete | null>(null);
   const [newShelfId, setNewShelfId] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,6 +155,7 @@ const Athletes: React.FC = () => {
 
   const fetchAthletes = async () => {
     try {
+      setLoading(true); // Set loading before fetch
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
 
@@ -221,6 +172,8 @@ const Athletes: React.FC = () => {
     } catch (error) {
       console.error('Error fetching athletes:', error);
       setAthletes([]);
+    } finally {
+      setLoading(false); // Clear loading after fetch
     }
   };
 
@@ -249,11 +202,11 @@ const Athletes: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, []);
 
-  // Debounced fetch for athletes when filters/search change
+  // Debounced fetch for athletes when filters/search change - OPTIMIZED to 300ms
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchAthletes();
-    }, 350);
+    }, 300); // Reduced from 350ms to 300ms for faster response
     return () => clearTimeout(timeoutId);
   }, [searchQuery, filterGymType, filterGymTime, filterFeeStatus]);
 
@@ -453,45 +406,6 @@ const Athletes: React.FC = () => {
       }
     }
   };
-
-  const getStatusChip = React.useCallback((days: number) => {
-    if (days < 0) {
-      return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Chip label="Overdue" size="small" sx={statusChipOverdueSx} />
-          <Typography variant="caption" sx={statusTextOverdueSx}>
-            {Math.abs(days)} days ago
-          </Typography>
-        </Box>
-      );
-    } else if (days <= 5) {
-      return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Chip label="Critical" size="small" sx={statusChipCriticalSx} />
-          <Typography variant="caption" sx={statusTextCriticalSx}>
-            {days} days left
-          </Typography>
-        </Box>
-      );
-    } else if (days <= 15) {
-      return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Chip label="Warning" size="small" sx={statusChipWarningSx} />
-          <Typography variant="caption" sx={statusTextWarningSx}>
-            {days} days left
-          </Typography>
-        </Box>
-      );
-    }
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        <Chip label="Active" size="small" sx={statusChipActiveSx} />
-        <Typography variant="caption" sx={statusTextActiveSx}>
-          {days} days left
-        </Typography>
-      </Box>
-    );
-  }, []);
 
   const kpiCards = useMemo(() => [
     {
@@ -798,35 +712,50 @@ const Athletes: React.FC = () => {
               </Typography>
             </Box>
 
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap: `${GRID_GAP}px`,
-            }}>
-              {sortedAthletes.map((athlete) => {
-                const shelf = shelves.find(s => s.id === athlete.shelf);
-                return (
-                  <AthleteCard
-                    key={athlete.id}
-                    athlete={athlete}
-                    shelf={shelf}
-                    onCardClick={() => openProfile(athlete)}
-                    onToggleStatus={() => handleToggleStatus(athlete)}
-                    onEdit={() => handleOpen(athlete)}
-                    onRenew={(e?: React.MouseEvent) => openRenewDialog(e!, athlete)}
-                    onReassignShelf={() => handleReassignShelf(athlete)}
-                    onDelete={() => handleDelete(athlete.id)}
-                    getStatusChip={getStatusChip}
-                  />
-                );
-              })}
-            </Box>
+            {/* Show skeleton loading while fetching */}
+            {loading ? (
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: `${GRID_GAP}px`,
+              }}>
+                {/* Show 6 skeleton cards while loading */}
+                {[...Array(6)].map((_, index) => (
+                  <AthleteCardSkeleton key={`skeleton-${index}`} />
+                ))}
+              </Box>
+            ) : (
+              <>
+                <Box sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  gap: `${GRID_GAP}px`,
+                }}>
+                  {sortedAthletes.map((athlete) => {
+                    const shelf = shelves.find(s => s.id === athlete.shelf);
+                    return (
+                      <AthleteCard
+                        key={athlete.id}
+                        athlete={athlete}
+                        shelf={shelf}
+                        onCardClick={() => openProfile(athlete)}
+                        onToggleStatus={() => handleToggleStatus(athlete)}
+                        onEdit={() => handleOpen(athlete)}
+                        onRenew={(e?: React.MouseEvent) => openRenewDialog(e!, athlete)}
+                        onReassignShelf={() => handleReassignShelf(athlete)}
+                        onDelete={() => handleDelete(athlete.id)}
+                      />
+                    );
+                  })}
+                </Box>
 
-            <Box sx={{ textAlign: 'center', py: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Showing {sortedAthletes.length} of {sortedAthletes.length} athletes
-              </Typography>
-            </Box>
+                <Box sx={{ textAlign: 'center', py: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Showing {sortedAthletes.length} of {sortedAthletes.length} athletes
+                  </Typography>
+                </Box>
+              </>
+            )}
           </Box>
         </Fade>
 

@@ -49,7 +49,6 @@ interface AthleteCardProps {
   onRenew: (e?: React.MouseEvent) => void;
   onReassignShelf: () => void;
   onDelete: () => void;
-  getStatusChip: (daysLeft: number) => React.ReactNode;
 }
 
 const CARD_HEIGHT = 420;
@@ -73,7 +72,6 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
   onRenew,
   onReassignShelf,
   onDelete,
-  getStatusChip,
 }) => {
   const athleteShelf = useMemo(() => shelf, [shelf?.id, athlete.shelf]);
 
@@ -96,7 +94,7 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
         background: photoUrl
           ? `url(${photoUrl}) center/cover no-repeat`
           : 'linear-gradient(160deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)',
-        // Subtle scale on hover — no shadow, no border
+        // Subtle scale on hover
         transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
           transform: 'scale(1.025)',
@@ -115,121 +113,93 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
         },
       }}
     >
-      {/* Status accent line at top */}
-      <Box sx={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        background: accentColor,
-        zIndex: 3,
-      }} />
-
-      {/* Top row: active dot + status chip + actions */}
+      {/* Top row: action buttons only */}
       <Box sx={{
         position: 'absolute',
         top: 14,
-        left: 14,
         right: 14,
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         alignItems: 'center',
         zIndex: 3,
       }}>
-        {/* Left: Active indicator */}
-        <Box sx={{
-          width: 10,
-          height: 10,
-          borderRadius: '50%',
-          background: athlete.is_active ? '#10b981' : '#94a3b8',
-          boxShadow: athlete.is_active
-            ? '0 0 0 3px rgba(16,185,129,0.3)'
-            : '0 0 0 3px rgba(148,163,184,0.3)',
-        }} />
-
-        {/* Center: Status chip */}
-        <Box sx={{ '& .MuiChip-root': { height: 24, fontSize: '0.7rem' } }}>
-          {getStatusChip(athlete.days_left)}
-        </Box>
-
-        {/* Right: Action buttons with dark backdrop */}
+        {/* Action buttons with dark backdrop - BIGGER */}
         <Box
           className="card-actions"
           sx={{
             display: 'flex',
-            gap: 0.5,
+            gap: 0.75,
             justifyContent: 'flex-end',
-            bgcolor: 'rgba(5,5,15,0.75)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: 2,
-            p: 0.5,
+            bgcolor: 'rgba(5,5,15,0.85)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: 2.5,
+            p: 0.75,
           }}
           onClick={(e) => e.stopPropagation()}
         >
           <Tooltip title={athlete.is_active ? 'Deactivate' : 'Activate'}>
             <IconButton
-              size="small"
+              size="medium"
               onClick={(e) => { e.stopPropagation(); onToggleStatus(); }}
               sx={{
                 color: '#fff',
-                width: 32, height: 32,
+                width: 40, height: 40,
                 '&:hover': { bgcolor: 'rgba(16,185,129,0.3)' },
               }}
             >
-              {athlete.is_active ? <ToggleOn sx={{ fontSize: 20 }} /> : <ToggleOff sx={{ fontSize: 20 }} />}
+              {athlete.is_active ? <ToggleOn sx={{ fontSize: 24 }} /> : <ToggleOff sx={{ fontSize: 24 }} />}
             </IconButton>
           </Tooltip>
           <Tooltip title="Edit">
             <IconButton
-              size="small"
+              size="medium"
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               sx={{
                 color: '#fff',
-                width: 32, height: 32,
+                width: 40, height: 40,
                 '&:hover': { bgcolor: 'rgba(99,102,241,0.3)' },
               }}
             >
-              <Edit sx={{ fontSize: 17 }} />
+              <Edit sx={{ fontSize: 20 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Renew">
             <IconButton
-              size="small"
+              size="medium"
               onClick={(e) => { e.stopPropagation(); onRenew(e); }}
               sx={{
                 color: '#fff',
-                width: 32, height: 32,
+                width: 40, height: 40,
                 '&:hover': { bgcolor: 'rgba(16,185,129,0.3)' },
               }}
             >
-              <CreditCard sx={{ fontSize: 17 }} />
+              <CreditCard sx={{ fontSize: 20 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Locker">
             <IconButton
-              size="small"
+              size="medium"
               onClick={(e) => { e.stopPropagation(); onReassignShelf(); }}
               sx={{
                 color: '#fff',
-                width: 32, height: 32,
+                width: 40, height: 40,
                 '&:hover': { bgcolor: 'rgba(59,130,246,0.3)' },
               }}
             >
-              <Storage sx={{ fontSize: 17 }} />
+              <Storage sx={{ fontSize: 20 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">
             <IconButton
-              size="small"
+              size="medium"
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
               sx={{
                 color: '#fff',
-                width: 32, height: 32,
+                width: 40, height: 40,
                 '&:hover': { bgcolor: 'rgba(239,68,68,0.3)' },
               }}
             >
-              <Delete sx={{ fontSize: 17 }} />
+              <Delete sx={{ fontSize: 20 }} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -252,18 +222,18 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
         </Box>
       )}
 
-      {/* Dark gradient overlay — covers bottom 35% of card with stronger darkness */}
+      {/* Dark gradient overlay — covers bottom 40% of card */}
       <Box sx={{
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        height: '35%',
+        height: '40%',
         background: 'linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.92) 40%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.3) 90%, transparent 100%)',
         zIndex: 2,
       }} />
 
-      {/* Info content — sits on top of gradient, full width bottom */}
+      {/* Info content — sits on top of gradient */}
       <Box sx={{
         position: 'absolute',
         bottom: 0,
@@ -303,7 +273,7 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
               fontWeight: 500,
             }}
           >
-            {athlete.gym_time} · {athlete.gym_type}
+            {athlete.gym_time}
           </Typography>
 
           {/* Debt badge */}
@@ -323,9 +293,9 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
           )}
         </Box>
 
-        {/* Split layout: Gym info left, Locker info right */}
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between' }}>
-          {/* Left: Gym & Fee Info */}
+        {/* Split layout: Info left, Locker right */}
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between', mb: 1.5 }}>
+          {/* Left: Fee deadline & Contact */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
             {/* Fee deadline */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
@@ -341,23 +311,6 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
                 {athlete.contact_number}
               </Typography>
             )}
-
-            {/* Gym type chip */}
-            <Chip
-              label={athlete.gym_type}
-              size="small"
-              sx={{
-                height: 24,
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'capitalize',
-                bgcolor: athlete.gym_type === 'fitness'
-                  ? 'rgba(99,102,241,0.85)'
-                  : 'rgba(236,72,153,0.85)',
-                color: '#fff',
-                '& .MuiChip-label': { px: 1.2 },
-              }}
-            />
           </Box>
 
           {/* Right: Locker Info */}
@@ -394,6 +347,93 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
               )}
             </Box>
           )}
+        </Box>
+
+        {/* Status row at bottom - ONE ROW with dot + chip + text */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1.5,
+          pt: 1,
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          {/* Active status dot */}
+          <Box sx={{
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: athlete.is_active ? '#10b981' : '#94a3b8',
+            boxShadow: athlete.is_active
+              ? '0 0 0 3px rgba(16,185,129,0.3)'
+              : '0 0 0 3px rgba(148,163,184,0.3)',
+            flexShrink: 0,
+          }} />
+
+          {/* Status chip and text in one row */}
+          {(() => {
+            const days = athlete.days_left;
+            let chipSx, chipLabel, textSx, textContent;
+
+            if (days < 0) {
+              chipSx = {
+                background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+                color: 'white',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                height: 26,
+                fontSize: '0.75rem',
+              };
+              chipLabel = 'Overdue';
+              textSx = { color: '#ef4444', fontWeight: 600, fontSize: '0.75rem' };
+              textContent = `${Math.abs(days)} days ago`;
+            } else if (days <= 5) {
+              chipSx = {
+                background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+                color: 'white',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                height: 26,
+                fontSize: '0.75rem',
+              };
+              chipLabel = 'Critical';
+              textSx = { color: '#f59e0b', fontWeight: 600, fontSize: '0.75rem' };
+              textContent = `${days} days left`;
+            } else if (days <= 15) {
+              chipSx = {
+                background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+                color: 'white',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+                height: 26,
+                fontSize: '0.75rem',
+              };
+              chipLabel = 'Warning';
+              textSx = { color: '#3b82f6', fontWeight: 600, fontSize: '0.75rem' };
+              textContent = `${days} days left`;
+            } else {
+              chipSx = {
+                background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                color: 'white',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                height: 26,
+                fontSize: '0.75rem',
+              };
+              chipLabel = 'Active';
+              textSx = { color: '#10b981', fontWeight: 600, fontSize: '0.75rem' };
+              textContent = `${days} days left`;
+            }
+
+            return (
+              <>
+                <Chip label={chipLabel} size="small" sx={chipSx} />
+                <Typography variant="caption" sx={textSx}>
+                  {textContent}
+                </Typography>
+              </>
+            );
+          })()}
         </Box>
       </Box>
     </Box>
