@@ -8,35 +8,8 @@ import AthleteCard, { GRID_GAP } from './AthleteCard';
 import AthleteCardSkeleton from './AthleteCardSkeleton';
 import AthleteProfile from './AthleteProfile';
 import AthleteRegistrationModal from './AthleteRegistrationModal';
-
-interface Payment {
-  id: number;
-  amount: number;
-  payment_date: string;
-  payment_type: 'registration' | 'renewal';
-  notes: string;
-}
-
-interface Athlete {
-  id: number;
-  full_name: string;
-  father_name: string;
-  photo: string | null;
-  registration_date: string;
-  fee_start_date: string;
-  fee_deadline_date: string;
-  gym_type: string;
-  gym_time: string;
-  discount: number;
-  debt: number;
-  final_fee: number;
-  contact_number: string;
-  notes: string;
-  shelf: number | null;
-  days_left: number;
-  is_active: boolean;
-  payments: Payment[];
-}
+import { useAthletes, useToggleAthleteStatus, useRenewAthlete, useDeleteAthlete, type Athlete } from '../hooks/useAthletes';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface Shelf {
   id: number;
@@ -125,7 +98,6 @@ const headerContainerSx = {
 
 const Athletes: React.FC = () => {
   const location = useLocation();
-  const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Athlete | null>(null);
@@ -133,13 +105,15 @@ const Athletes: React.FC = () => {
   const [reassignAthlete, setReassignAthlete] = useState<Athlete | null>(null);
   const [newShelfId, setNewShelfId] = useState('');
   const [loaded, setLoaded] = useState(false);
-  const [loading, setLoading] = useState(true); // Add loading state
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGymType, setFilterGymType] = useState('');
   const [filterGymTime, setFilterGymTime] = useState('');
   const [filterFeeStatus, setFilterFeeStatus] = useState('');
+
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Sorting states
   const [sortField] = useState<string>('');
@@ -153,29 +127,17 @@ const Athletes: React.FC = () => {
   const [profileAthlete, setProfileAthlete] = useState<Athlete | null>(null);
   const [hasOpenedProfile, setHasOpenedProfile] = useState(false);
 
-  const fetchAthletes = async () => {
-    try {
-      setLoading(true); // Set loading before fetch
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
+  // React Query hooks
+  const { data: athletes = [], isLoading: loading, refetch: fetchAthletes } = useAthletes({
+    search: debouncedSearchQuery,
+    gym_type: filterGymType,
+    gym_time: filterGymTime,
+    fee_status: filterFeeStatus,
+  });
 
-      if (searchQuery) params.append('search', searchQuery);
-      if (filterGymType) params.append('gym_type', filterGymType);
-      if (filterGymTime) params.append('gym_time', filterGymTime);
-      if (filterFeeStatus) params.append('fee_status', filterFeeStatus);
-      params.append('ordering', '-registration_date');
-
-      const response = await axios.get(`http://localhost:8000/api/athletes/?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAthletes(Array.isArray(response.data) ? response.data : (response.data.results || []));
-    } catch (error) {
-      console.error('Error fetching athletes:', error);
-      setAthletes([]);
-    } finally {
-      setLoading(false); // Clear loading after fetch
-    }
-  };
+  const toggleStatusMutation = useToggleAthleteStatus();
+  const renewMutation = useRenewAthlete();
+  const deleteMutation = useDeleteAthlete();
 
   const fetchShelves = async () => {
     try {
@@ -201,14 +163,6 @@ const Athletes: React.FC = () => {
     const timeoutId = setTimeout(() => setLoaded(true), 100);
     return () => clearTimeout(timeoutId);
   }, []);
-
-  // Debounced fetch for athletes when filters/search change - OPTIMIZED to 300ms
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchAthletes();
-    }, 300); // Reduced from 350ms to 300ms for faster response
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, filterGymType, filterGymTime, filterFeeStatus]);
 
   // Check for profile to open from navigation state
   useEffect(() => {
@@ -237,17 +191,15 @@ const Athletes: React.FC = () => {
 
   const submitRenew = async () => {
     if (!renewAthlete) return;
-    const token = localStorage.getItem('token');
+    
     try {
-      await axios.post(`http://localhost:8000/api/athletes/${renewAthlete.id}/renew/`, {
+      await renewMutation.mutateAsync({
+        id: renewAthlete.id,
         duration: renewDuration
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       toast.success(`Membership renewed for "${renewAthlete.full_name}" (${renewDuration} days)!`);
       setRenewOpen(false);
-      fetchAthletes();
     } catch (error) {
       toast.error('Failed to renew membership. Please try again.');
       console.error('Error renewing membership:', error);
@@ -255,14 +207,10 @@ const Athletes: React.FC = () => {
   };
 
   const handleToggleStatus = async (athlete: Athlete) => {
-    const token = localStorage.getItem('token');
     try {
-      await axios.post(`http://localhost:8000/api/athletes/${athlete.id}/toggle_status/`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await toggleStatusMutation.mutateAsync(athlete.id);
       const newStatus = athlete.is_active ? 'deactivated' : 'activated';
       toast.success(`Athlete "${athlete.full_name}" ${newStatus} successfully!`);
-      fetchAthletes();
     } catch (error) {
       toast.error('Failed to update athlete status. Please try again.');
       console.error('Error toggling status:', error);
@@ -393,13 +341,9 @@ const Athletes: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this athlete?')) {
-      const token = localStorage.getItem('token');
       try {
-        await axios.delete(`http://localhost:8000/api/athletes/${id}/`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await deleteMutation.mutateAsync(id);
         toast.success('Athlete deleted successfully!');
-        fetchAthletes();
       } catch (error) {
         toast.error('Failed to delete athlete. Please try again.');
         console.error('Error deleting athlete:', error);

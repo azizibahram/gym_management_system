@@ -106,6 +106,12 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        # Connection pooling - keep connections alive for 10 minutes
+        "CONN_MAX_AGE": 600,  # 600 seconds = 10 minutes
+        # SQLite-specific optimizations
+        "OPTIONS": {
+            "timeout": 20,  # Increase timeout for busy database
+        }
     }
 }
 

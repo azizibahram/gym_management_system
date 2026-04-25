@@ -117,9 +117,9 @@ if errorlevel 1 (
 echo [SUCCESS] Virtual environment activated.
 echo.
 
-:: Start backend using Waitress (non-blocking)
-echo [INFO] Starting backend server...
-start /b waitress-serve.exe --listen=127.0.0.1:8000 gymsystem.wsgi:application
+:: Start backend using Waitress with optimized settings (non-blocking)
+echo [INFO] Starting backend server with optimized settings...
+start /b waitress-serve.exe --listen=127.0.0.1:8000 --threads=8 --channel-timeout=120 --connection-limit=500 gymsystem.wsgi:application
 
 :: Give server time to boot
 timeout /t 3 >nul

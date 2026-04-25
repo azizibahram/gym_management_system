@@ -3,23 +3,49 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import authenticate
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Prefetch, Q
 from django.db.models.functions import TruncMonth
 from datetime import date, timedelta
 
 from .models import Athlete, Shelf, Payment
-from .serializers import AthleteSerializer, ShelfSerializer, PaymentSerializer
+from .serializers import AthleteSerializer, AthleteListSerializer, ShelfSerializer, PaymentSerializer
 from .filters import AthleteFilter
 
 
+class AthletePagination(PageNumberPagination):
+    """Custom pagination for athletes - load 50 at a time"""
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 class AthleteViewSet(viewsets.ModelViewSet):
-    queryset = Athlete.objects.all()
-    serializer_class = AthleteSerializer
+    queryset = Athlete.objects.all()  # Base queryset for router
     filterset_class = AthleteFilter
     search_fields = ['full_name', 'father_name', 'contact_number']
     ordering_fields = ['registration_date', 'fee_deadline_date', 'full_name', 'is_active']
     ordering = ['-registration_date']
+    pagination_class = AthletePagination
+    
+    def get_serializer_class(self):
+        """Use lightweight serializer for list, full serializer for detail/create/update"""
+        if self.action == 'list':
+            return AthleteListSerializer
+        return AthleteSerializer
+    
+    def get_queryset(self):
+        """Optimize queries with select_related - avoid N+1 queries"""
+        queryset = Athlete.objects.select_related('shelf')
+        
+        # Only prefetch payments for detail view
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related(
+                Prefetch('payments', queryset=Payment.objects.order_by('-payment_date'))
+            )
+        
+        return queryset
     
     def perform_create(self, serializer):
         # First save without athlete.shelf to get the athlete instance
@@ -163,26 +189,40 @@ class AthleteViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class ShelfViewSet(viewsets.ModelViewSet):
-
-    queryset = Shelf.objects.all()
-
+    queryset = Shelf.objects.all()  # Base queryset for router
     serializer_class = ShelfSerializer
+    
+    def get_queryset(self):
+        """Optimize queries with select_related"""
+        return Shelf.objects.select_related('assigned_athlete').all()
 
 class DashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request):
         today = date.today()
         
-        # 1. Basic Stats
-        total_athletes = Athlete.objects.count()
-        active_count = Athlete.objects.filter(is_active=True).count()
+        # 1. Basic Stats - Use aggregation instead of loading all athletes
+        stats = Athlete.objects.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(is_active=True)),
+            total_debt=Sum('debt')
+        )
+        
+        total_athletes = stats['total'] or 0
+        active_count = stats['active'] or 0
         inactive_count = total_athletes - active_count
         
         # Income (Total from Payments)
         total_income = Payment.objects.aggregate(Sum('amount'))['amount__sum'] or 0
         
         # Shelves
-        total_shelves = Shelf.objects.count()
-        available_shelves = Shelf.objects.filter(status='available').count()
+        shelf_stats = Shelf.objects.aggregate(
+            total=Count('id'),
+            available=Count('id', filter=Q(status='available'))
+        )
+        total_shelves = shelf_stats['total'] or 0
+        available_shelves = shelf_stats['available'] or 0
         
         # 2. Revenue Trend (Last 6 Months)
         six_months_ago = today - timedelta(days=180)
@@ -199,7 +239,7 @@ class DashboardStatsView(APIView):
                 'amount': float(entry['total'])
             })
             
-        # 3. Distributions
+        # 3. Distributions - Use aggregation
         gym_type_dist = [
             {'name': 'Fitness', 'value': Athlete.objects.filter(gym_type='fitness', is_active=True).count()},
             {'name': 'Bodybuilding', 'value': Athlete.objects.filter(gym_type='bodybuilding', is_active=True).count()}
@@ -216,19 +256,26 @@ class DashboardStatsView(APIView):
             {'name': 'Inactive', 'value': inactive_count}
         ]
         
-        # 4. Critical Alerts (Expiring or Overdue)
+        # 4. Critical Alerts (Expiring or Overdue) - Only load necessary fields
         critical_athletes = Athlete.objects.filter(
             fee_deadline_date__lte=today + timedelta(days=3),
             is_active=True
+        ).select_related('shelf').only(
+            'id', 'full_name', 'fee_deadline_date', 'is_active', 'shelf'
+        )[:10]  # Limit to 10 most critical
+        
+        from .serializers import AthleteListSerializer
+        critical_data = sorted(
+            AthleteListSerializer(critical_athletes, many=True).data, 
+            key=lambda x: x['days_left']
         )
-        critical_data = sorted(AthleteSerializer(critical_athletes, many=True).data, key=lambda x: x['days_left'])
         
         return Response({
             'stats': {
                 'total': total_athletes,
                 'active': active_count,
                 'inactive': inactive_count,
-                'income': total_income,
+                'income': float(total_income),
                 'shelves_total': total_shelves,
                 'shelves_available': available_shelves,
             },

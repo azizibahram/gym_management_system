@@ -27,7 +27,7 @@ interface Athlete {
   shelf: number | null;
   days_left: number;
   is_active: boolean;
-  payments: Payment[];
+  payments?: Payment[]; // Optional - only included in detail views
 }
 
 interface Shelf {

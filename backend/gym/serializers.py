@@ -10,7 +10,22 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = '__all__'
 
+
+class AthleteListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for list views - NO payments to avoid N+1 queries"""
+    days_left = serializers.ReadOnlyField()
+    shelf_number = serializers.CharField(source='shelf.shelf_number', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = Athlete
+        fields = ['id', 'full_name', 'father_name', 'photo', 'registration_date',
+                  'fee_deadline_date', 'gym_type', 'gym_time', 'discount', 'debt',
+                  'final_fee', 'contact_number', 'is_active', 'days_left', 
+                  'shelf', 'shelf_number', 'notes']
+
+
 class AthleteSerializer(serializers.ModelSerializer):
+    """Full serializer for detail views and create/update - includes payments"""
     days_left = serializers.ReadOnlyField()
     fee_deadline_date = serializers.DateField(required=False)
     final_fee = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
