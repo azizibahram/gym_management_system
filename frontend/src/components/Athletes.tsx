@@ -1,14 +1,14 @@
 import { Add, Cancel, CheckCircle, FilterList, Search, Warning } from '@mui/icons-material';
-import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grow, InputAdornment, InputLabel, MenuItem, Paper, Select, Slide, TextField, Typography } from '@mui/material';
+import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grow, InputAdornment, InputLabel, MenuItem, Paper, Select, Slide, TextField, Typography, CircularProgress } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import AthleteCard, { GRID_GAP } from './AthleteCard';
 import AthleteCardSkeleton from './AthleteCardSkeleton';
 import AthleteProfile from './AthleteProfile';
 import AthleteRegistrationModal from './AthleteRegistrationModal';
-import { useAthletes, useToggleAthleteStatus, useRenewAthlete, useDeleteAthlete, type Athlete } from '../hooks/useAthletes';
+import { useInfiniteAthletes, useToggleAthleteStatus, useRenewAthlete, useDeleteAthlete, type Athlete } from '../hooks/useAthletes';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface Shelf {
@@ -106,6 +106,9 @@ const Athletes: React.FC = () => {
   const [newShelfId, setNewShelfId] = useState('');
   const [loaded, setLoaded] = useState(false);
 
+  // Ref for infinite scroll observer
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGymType, setFilterGymType] = useState('');
@@ -127,17 +130,58 @@ const Athletes: React.FC = () => {
   const [profileAthlete, setProfileAthlete] = useState<Athlete | null>(null);
   const [hasOpenedProfile, setHasOpenedProfile] = useState(false);
 
-  // React Query hooks
-  const { data: athletes = [], isLoading: loading, refetch: fetchAthletes } = useAthletes({
+  // React Query hooks - using infinite scroll
+  const { 
+    data, 
+    isLoading: loading, 
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch: fetchAthletes 
+  } = useInfiniteAthletes({
     search: debouncedSearchQuery,
     gym_type: filterGymType,
     gym_time: filterGymTime,
     fee_status: filterFeeStatus,
   });
 
+  // Flatten all pages into single array
+  const athletes = useMemo(() => {
+    return data?.pages.flatMap(page => page.results) || [];
+  }, [data]);
+
+  // Get total count from first page
+  const totalCount = data?.pages[0]?.count || 0;
+
   const toggleStatusMutation = useToggleAthleteStatus();
   const renewMutation = useRenewAthlete();
   const deleteMutation = useDeleteAthlete();
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '200px', // Start loading 200px before reaching the bottom
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const fetchShelves = async () => {
     try {
@@ -405,7 +449,7 @@ const Athletes: React.FC = () => {
               Manage your gym members and their information
             </Typography>
             <Chip
-              label={`Total Members: ${athletes.length}`}
+              label={`Total Members: ${totalCount}`}
               sx={{
                 fontSize: '0.95rem',
                 py: 1,
@@ -652,7 +696,7 @@ const Athletes: React.FC = () => {
           <Box>
             <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="h6" fontWeight={700} color="#1e293b">
-                Athletes ({athletes.length})
+                Athletes ({totalCount} total, {athletes.length} loaded)
               </Typography>
             </Box>
 
@@ -693,10 +737,49 @@ const Athletes: React.FC = () => {
                   })}
                 </Box>
 
-                <Box sx={{ textAlign: 'center', py: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Showing {sortedAthletes.length} of {sortedAthletes.length} athletes
+                {/* Infinite Scroll Trigger - invisible element to trigger loading */}
+                <Box 
+                  ref={loadMoreRef} 
+                  sx={{ 
+                    height: '20px', 
+                    width: '100%',
+                    visibility: 'hidden'
+                  }} 
+                />
+
+                {/* Loading indicator when fetching next page */}
+                {isFetchingNextPage && (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <CircularProgress 
+                      size={40} 
+                      sx={{ 
+                        color: '#6366f1',
+                        mb: 2
+                      }} 
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      Loading more athletes...
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Pagination Info */}
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Showing {sortedAthletes.length} of {totalCount} athletes
                   </Typography>
+                  
+                  {!hasNextPage && sortedAthletes.length > 0 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                      ✓ All athletes loaded
+                    </Typography>
+                  )}
+                  
+                  {hasNextPage && !isFetchingNextPage && (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                      Scroll down to load more...
+                    </Typography>
+                  )}
                 </Box>
               </>
             )}

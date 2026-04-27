@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { queryKeys } from '../config/queryClient';
 
@@ -43,8 +43,42 @@ export interface AthleteFilters {
   page_size?: number;
 }
 
+interface PaginatedResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Athlete[];
+}
+
 /**
- * Fetch athletes with optional filters
+ * Fetch athletes with optional filters (for infinite scroll)
+ */
+const fetchAthletesPage = async ({ pageParam = 1, queryKey }: { pageParam?: number; queryKey: any }): Promise<PaginatedResponse> => {
+  const filters = queryKey[2] as AthleteFilters | undefined;
+  const token = localStorage.getItem('token');
+  const params = new URLSearchParams();
+  
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.gym_type) params.append('gym_type', filters.gym_type);
+  if (filters?.gym_time) params.append('gym_time', filters.gym_time);
+  if (filters?.fee_status) params.append('fee_status', filters.fee_status);
+  
+  // Add page parameter
+  params.append('page', String(pageParam));
+  params.append('page_size', String(filters?.page_size || 50));
+  
+  // Always order by registration date descending
+  params.append('ordering', '-registration_date');
+
+  const { data } = await axios.get(`${API_URL}/athletes/?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  
+  return data;
+};
+
+/**
+ * Fetch athletes with optional filters (legacy - for non-paginated use)
  */
 const fetchAthletes = async (filters?: AthleteFilters): Promise<Athlete[]> => {
   const token = localStorage.getItem('token');
@@ -134,7 +168,30 @@ const renewAthlete = async ({ id, duration }: { id: number; duration: number }):
 };
 
 /**
- * Hook to fetch athletes list with caching and background refetch
+ * Hook to fetch athletes list with infinite scroll support
+ */
+export const useInfiniteAthletes = (filters?: AthleteFilters) => {
+  return useInfiniteQuery({
+    queryKey: queryKeys.athletes.list(filters),
+    queryFn: fetchAthletesPage,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      // If there's a next page, extract page number from URL
+      if (lastPage.next) {
+        const url = new URL(lastPage.next);
+        const page = url.searchParams.get('page');
+        return page ? parseInt(page) : undefined;
+      }
+      return undefined;
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * Hook to fetch athletes list with caching and background refetch (legacy)
  */
 export const useAthletes = (filters?: AthleteFilters) => {
   return useQuery({
