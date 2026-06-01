@@ -48,6 +48,7 @@ interface AthleteFormData {
   fee_deadline_date: string;
   locker_duration_months: number;
   locker_price: number;
+  locker_start_date: string;
   locker_end_date: string;
 }
 
@@ -58,6 +59,40 @@ interface AthleteRegistrationModalProps {
   shelves: Shelf[];
   onSuccess: () => void;
 }
+
+const formatDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const todayString = () => formatDate(new Date());
+
+const addMonths = (dateString: string, monthsToAdd: number) => {
+  const startDate = new Date(`${dateString}T00:00:00`);
+  const year = startDate.getFullYear();
+  const month = startDate.getMonth();
+  const day = startDate.getDate();
+  const targetMonth = month + monthsToAdd;
+  const lastDayOfTarget = new Date(year, targetMonth + 1, 0).getDate();
+  const endDate = new Date(year, targetMonth, Math.min(day, lastDayOfTarget));
+  return formatDate(endDate);
+};
+
+const getBillingMonths = (startDate: string, endDate: string) => {
+  if (!startDate || !endDate) return 0;
+
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+    return 0;
+  }
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  const days = Math.ceil((end.getTime() - start.getTime()) / dayMs);
+  return Math.max(1, Math.ceil(days / 30));
+};
 
 const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.memo(({
   open,
@@ -82,6 +117,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
     fee_deadline_date: editing?.fee_deadline_date || '',
     locker_duration_months: 1,
     locker_price: 0,
+    locker_start_date: editing?.shelf ? todayString() : '',
     locker_end_date: '',
   }));
 
@@ -110,42 +146,11 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
         fee_deadline_date: editing?.fee_deadline_date || '',
         locker_duration_months: shelfData?.locker_duration_months || 1,
         locker_price: shelfData?.locker_price || 0,
+        locker_start_date: shelfData?.locker_start_date || (editing?.shelf ? todayString() : ''),
         locker_end_date: shelfData?.locker_end_date || '',
       });
     }
   }, [open, editing, shelves]);
-
-  // Auto-calculate locker end date when duration or shelf changes.
-  // Uses the existing locker_start_date when editing, otherwise today.
-  // Uses day-safe month addition to avoid month-overflow (e.g. Jan 31 + 1 month → Feb 28).
-  React.useEffect(() => {
-    if (form.locker_duration_months && form.shelf) {
-      // Determine the start: use the saved start date when editing, otherwise today
-      let shelfData: Shelf | undefined;
-      // Only use the saved start date if the shelf hasn't changed from the original
-      if (editing?.shelf && String(editing.shelf) === form.shelf) {
-        shelfData = shelves.find(s => s.id === Number(editing.shelf));
-      }
-      const startStr = shelfData?.locker_start_date;
-      const startDate = startStr ? new Date(`${startStr}T00:00:00`) : new Date();
-
-      // Day-safe month addition: clamp to last day of target month
-      const year = startDate.getFullYear();
-      const month = startDate.getMonth(); // 0-indexed
-      const day = startDate.getDate();
-      const targetMonth = month + form.locker_duration_months;
-      // Last day of the target month
-      const lastDayOfTarget = new Date(year, targetMonth + 1, 0).getDate();
-      const endDay = Math.min(day, lastDayOfTarget);
-      const endDate = new Date(year, targetMonth, endDay);
-
-      const formattedEndDate = endDate.toISOString().split('T')[0];
-      setForm(prev => ({
-        ...prev,
-        locker_end_date: formattedEndDate,
-      }));
-    }
-  }, [form.locker_duration_months, form.shelf, editing, shelves]);
 
   // Memoized fee calculation
   const finalFee = useMemo(() => {
@@ -153,15 +158,31 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
     return base - form.discount - form.debt;
   }, [form.gym_type, form.discount, form.debt]);
 
+  const billingMonths = useMemo(() => {
+    return getBillingMonths(form.locker_start_date, form.locker_end_date);
+  }, [form.locker_start_date, form.locker_end_date]);
+
   // Memoized locker total
   const lockerTotal = useMemo(() => {
-    return form.locker_duration_months * Number(form.locker_price);
-  }, [form.locker_duration_months, form.locker_price]);
+    return billingMonths * Number(form.locker_price);
+  }, [billingMonths, form.locker_price]);
 
   const handleSubmit = useCallback(async () => {
     if (!form.full_name.trim()) {
       toast.error('Please enter full name');
       return;
+    }
+
+    if (form.shelf) {
+      if (!form.locker_start_date || !form.locker_end_date) {
+        toast.error('Please select locker start and end dates');
+        return;
+      }
+
+      if (new Date(`${form.locker_end_date}T00:00:00`) <= new Date(`${form.locker_start_date}T00:00:00`)) {
+        toast.error('Locker end date must be after start date');
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -178,11 +199,10 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
     data.append('notes', form.notes);
     if (form.shelf) {
       data.append('shelf', form.shelf);
-      data.append('locker_duration_months', form.locker_duration_months.toString());
+      data.append('locker_duration_months', billingMonths.toString());
       data.append('locker_price', form.locker_price.toString());
-      if (form.locker_end_date) {
-        data.append('locker_end_date', form.locker_end_date);
-      }
+      data.append('locker_start_date', form.locker_start_date);
+      data.append('locker_end_date', form.locker_end_date);
     }
     // Always send fee_deadline_date when editing so the backend never silently
     // falls back to the stale stored value. For new registrations, only send
@@ -218,7 +238,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
     } finally {
       setSubmitting(false);
     }
-  }, [form, editing, onSuccess, onClose]);
+  }, [form, billingMonths, editing, onSuccess, onClose]);
 
   return (
     <Dialog 
@@ -418,7 +438,28 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
               <Select
                 value={form.shelf}
                 label="Assigned Locker"
-                onChange={(e) => setForm(prev => ({ ...prev, shelf: e.target.value }))}
+                onChange={(e) => {
+                  const shelf = e.target.value;
+                  setForm(prev => {
+                    if (!shelf) {
+                      return {
+                        ...prev,
+                        shelf,
+                        locker_start_date: '',
+                        locker_end_date: '',
+                      };
+                    }
+
+                    const startDate = prev.locker_start_date || todayString();
+                    const endDate = prev.locker_end_date || addMonths(startDate, prev.locker_duration_months);
+                    return {
+                      ...prev,
+                      shelf,
+                      locker_start_date: startDate,
+                      locker_end_date: endDate,
+                    };
+                  });
+                }}
                 sx={{ borderRadius: 2.5 }}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
@@ -438,13 +479,21 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <FormControl fullWidth>
-                      <InputLabel>Duration</InputLabel>
+                      <InputLabel>Quick Duration</InputLabel>
                       <Select
                         value={form.locker_duration_months}
-                        label="Duration"
+                        label="Quick Duration"
                         onChange={(e) => {
                           const duration = Number(e.target.value);
-                          setForm(prev => ({ ...prev, locker_duration_months: duration }));
+                          setForm(prev => {
+                            const startDate = prev.locker_start_date || todayString();
+                            return {
+                              ...prev,
+                              locker_duration_months: duration,
+                              locker_start_date: startDate,
+                              locker_end_date: addMonths(startDate, duration),
+                            };
+                          });
                         }}
                         sx={{ borderRadius: 2.5 }}
                       >
@@ -474,7 +523,26 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
                     />
                   </Grid>
                   
-                  <Grid size={{ xs: 12 }}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      label="Start Date"
+                      type="date"
+                      value={form.locker_start_date}
+                      onChange={(e) => setForm(prev => ({ ...prev, locker_start_date: e.target.value }))}
+                      fullWidth
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+                      InputLabelProps={{ shrink: true }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <CalendarToday sx={{ color: '#6366f1' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       label="End Date"
                       type="date"
@@ -504,7 +572,7 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
                       border: '1px solid rgba(16, 185, 129, 0.3)'
                     }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Total Locker Fee:
+                        Total Locker Fee ({billingMonths || 0} month{billingMonths === 1 ? '' : 's'}):
                       </Typography>
                       <Typography variant="h5" sx={{ fontWeight: 800, color: '#10b981' }}>
                         {lockerTotal} AFN

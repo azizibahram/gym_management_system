@@ -70,12 +70,15 @@ class AthleteViewSet(viewsets.ModelViewSet):
                 # Update locker fields
                 locker_duration = self.request.data.get('locker_duration_months')
                 locker_price = self.request.data.get('locker_price')
+                locker_start_date = self.request.data.get('locker_start_date')
                 locker_end_date = self.request.data.get('locker_end_date')
                 
                 if locker_duration:
                     shelf.locker_duration_months = int(locker_duration)
                 if locker_price:
                     shelf.locker_price = float(locker_price)
+                if locker_start_date:
+                    shelf.locker_start_date = locker_start_date
                 if locker_end_date:
                     shelf.locker_end_date = locker_end_date
                 if not shelf.locker_start_date:
@@ -119,12 +122,15 @@ class AthleteViewSet(viewsets.ModelViewSet):
                 # Update locker fields
                 locker_duration = self.request.data.get('locker_duration_months')
                 locker_price = self.request.data.get('locker_price')
+                locker_start_date = self.request.data.get('locker_start_date')
                 locker_end_date = self.request.data.get('locker_end_date')
                 
                 if locker_duration:
                     new_shelf.locker_duration_months = int(locker_duration)
                 if locker_price:
                     new_shelf.locker_price = float(locker_price)
+                if locker_start_date:
+                    new_shelf.locker_start_date = locker_start_date
                 if locker_end_date:
                     new_shelf.locker_end_date = locker_end_date
                 if not new_shelf.locker_start_date:
