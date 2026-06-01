@@ -113,6 +113,29 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
         },
       }}
     >
+      {/* Always-visible member ID for quick cross-checking related registrations */}
+      <Box sx={{
+        position: 'absolute',
+        top: 14,
+        left: 14,
+        zIndex: 3,
+      }}>
+        <Chip
+          label={`ID ${athlete.id}`}
+          size="small"
+          sx={{
+            height: 28,
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            color: '#fff',
+            bgcolor: 'rgba(5,5,15,0.78)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.22)',
+            '& .MuiChip-label': { px: 1.2 },
+          }}
+        />
+      </Box>
+
       {/* Top row: action buttons only */}
       <Box sx={{
         position: 'absolute',

@@ -24,7 +24,7 @@ class AthletePagination(PageNumberPagination):
 class AthleteViewSet(viewsets.ModelViewSet):
     queryset = Athlete.objects.all()  # Base queryset for router
     filterset_class = AthleteFilter
-    search_fields = ['full_name', 'father_name', 'contact_number']
+    search_fields = ['=id', 'full_name', 'father_name', 'contact_number']
     ordering_fields = ['registration_date', 'fee_deadline_date', 'full_name', 'is_active']
     ordering = ['-registration_date']
     pagination_class = AthletePagination

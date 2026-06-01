@@ -1,7 +1,7 @@
 import { Add, Cancel, CheckCircle, FilterList, Search, Warning } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Chip, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Fade, FormControl, Grow, InputAdornment, InputLabel, MenuItem, Paper, Select, Slide, TextField, Typography, CircularProgress } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import AthleteCard, { GRID_GAP } from './AthleteCard';
@@ -95,6 +95,50 @@ const headerContainerSx = {
   },
 };
 
+interface AthleteGridProps {
+  athletes: Athlete[];
+  shelvesById: Map<number, Shelf>;
+  onOpenProfile: (athlete: Athlete) => void;
+  onToggleStatus: (athlete: Athlete) => void;
+  onEdit: (athlete: Athlete) => void;
+  onRenew: (event: React.MouseEvent, athlete: Athlete) => void;
+  onReassignShelf: (athlete: Athlete) => void;
+  onDelete: (id: number) => void;
+}
+
+const AthleteGrid = React.memo(({
+  athletes,
+  shelvesById,
+  onOpenProfile,
+  onToggleStatus,
+  onEdit,
+  onRenew,
+  onReassignShelf,
+  onDelete,
+}: AthleteGridProps) => (
+  <Box sx={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gap: `${GRID_GAP}px`,
+  }}>
+    {athletes.map((athlete) => (
+      <AthleteCard
+        key={athlete.id}
+        athlete={athlete}
+        shelf={athlete.shelf ? shelvesById.get(athlete.shelf) : undefined}
+        onCardClick={() => onOpenProfile(athlete)}
+        onToggleStatus={() => onToggleStatus(athlete)}
+        onEdit={() => onEdit(athlete)}
+        onRenew={(event?: React.MouseEvent) => {
+          if (event) onRenew(event, athlete);
+        }}
+        onReassignShelf={() => onReassignShelf(athlete)}
+        onDelete={() => onDelete(athlete.id)}
+      />
+    ))}
+  </Box>
+));
+
 
 const Athletes: React.FC = () => {
   const location = useLocation();
@@ -150,6 +194,10 @@ const Athletes: React.FC = () => {
     return data?.pages.flatMap(page => page.results) || [];
   }, [data]);
 
+  const shelvesById = useMemo(() => {
+    return new Map(shelves.map(shelf => [shelf.id, shelf]));
+  }, [shelves]);
+
   // Get total count from first page
   const totalCount = data?.pages[0]?.count || 0;
 
@@ -196,10 +244,10 @@ const Athletes: React.FC = () => {
     }
   };
 
-  const openProfile = (athlete: Athlete) => {
+  const openProfile = useCallback((athlete: Athlete) => {
     setProfileAthlete(athlete);
     setProfileOpen(true);
-  };
+  }, []);
 
   // Load static data once on mount
   useEffect(() => {
@@ -226,12 +274,12 @@ const Athletes: React.FC = () => {
     }
   }, [location.state, athletes, hasOpenedProfile]);
 
-  const openRenewDialog = (e: React.MouseEvent, athlete: Athlete) => {
+  const openRenewDialog = useCallback((e: React.MouseEvent, athlete: Athlete) => {
     e.stopPropagation();
     setRenewAthlete(athlete);
     setRenewDuration(30);
     setRenewOpen(true);
-  };
+  }, []);
 
   const submitRenew = async () => {
     if (!renewAthlete) return;
@@ -250,7 +298,7 @@ const Athletes: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (athlete: Athlete) => {
+  const handleToggleStatus = useCallback(async (athlete: Athlete) => {
     try {
       await toggleStatusMutation.mutateAsync(athlete.id);
       const newStatus = athlete.is_active ? 'deactivated' : 'activated';
@@ -259,13 +307,13 @@ const Athletes: React.FC = () => {
       toast.error('Failed to update athlete status. Please try again.');
       console.error('Error toggling status:', error);
     }
-  };
+  }, [toggleStatusMutation]);
 
-  const handleReassignShelf = (athlete: Athlete) => {
+  const handleReassignShelf = useCallback((athlete: Athlete) => {
     setReassignAthlete(athlete);
     setNewShelfId(athlete.shelf ? athlete.shelf.toString() : '');
     setReassignOpen(true);
-  };
+  }, []);
 
   const handleReassignSubmit = async () => {
     if (!reassignAthlete) return;
@@ -364,14 +412,14 @@ const Athletes: React.FC = () => {
     return { activeCount: active, criticalCount: critical, overdueCount: overdue };
   }, [athletes]);
 
-  const handleOpen = (athlete?: Athlete) => {
+  const handleOpen = useCallback((athlete?: Athlete) => {
     if (athlete) {
       setEditing(athlete);
     } else {
       setEditing(null);
     }
     setOpen(true);
-  };
+  }, []);
 
   const handleClose = () => {
     setOpen(false);
@@ -383,7 +431,7 @@ const Athletes: React.FC = () => {
     fetchShelves();
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     if (window.confirm('Are you sure you want to delete this athlete?')) {
       try {
         await deleteMutation.mutateAsync(id);
@@ -393,7 +441,7 @@ const Athletes: React.FC = () => {
         console.error('Error deleting athlete:', error);
       }
     }
-  };
+  }, [deleteMutation]);
 
   const kpiCards = useMemo(() => [
     {
@@ -568,7 +616,7 @@ const Athletes: React.FC = () => {
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
               <TextField
                 label="Search athletes"
-                placeholder="Search by name, father name, or contact"
+                placeholder="Search by ID, name, father name, or contact"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 sx={{
@@ -714,28 +762,16 @@ const Athletes: React.FC = () => {
               </Box>
             ) : (
               <>
-                <Box sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                  gap: `${GRID_GAP}px`,
-                }}>
-                  {sortedAthletes.map((athlete) => {
-                    const shelf = shelves.find(s => s.id === athlete.shelf);
-                    return (
-                      <AthleteCard
-                        key={athlete.id}
-                        athlete={athlete}
-                        shelf={shelf}
-                        onCardClick={() => openProfile(athlete)}
-                        onToggleStatus={() => handleToggleStatus(athlete)}
-                        onEdit={() => handleOpen(athlete)}
-                        onRenew={(e?: React.MouseEvent) => openRenewDialog(e!, athlete)}
-                        onReassignShelf={() => handleReassignShelf(athlete)}
-                        onDelete={() => handleDelete(athlete.id)}
-                      />
-                    );
-                  })}
-                </Box>
+                <AthleteGrid
+                  athletes={sortedAthletes}
+                  shelvesById={shelvesById}
+                  onOpenProfile={openProfile}
+                  onToggleStatus={handleToggleStatus}
+                  onEdit={handleOpen}
+                  onRenew={openRenewDialog}
+                  onReassignShelf={handleReassignShelf}
+                  onDelete={handleDelete}
+                />
 
                 {/* Infinite Scroll Trigger - invisible element to trigger loading */}
                 <Box 
