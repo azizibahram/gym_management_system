@@ -3,6 +3,7 @@
 # Gym Management System (MIS)
 
 [![CI](https://github.com/azizibahram/energy_gym_mis/actions/workflows/ci.yml/badge.svg)](https://github.com/azizibahram/energy_gym_mis/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?logo=render)](https://gym-management-system-euf4.onrender.com)
 [![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Django](https://img.shields.io/badge/Django-5.2.10-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
@@ -99,7 +100,9 @@ Energy Gym Management System is a full-stack web application that streamlines gy
 
 ## 🎮 Demo
 
-A live demo is coming soon. In the meantime, you can run the project locally or with Docker:
+🚀 **Live**: [gym-management-system-euf4.onrender.com](https://gym-management-system-euf4.onrender.com)
+
+You can also run the project locally or with Docker:
 
 ### Docker (one command)
 ```bash
