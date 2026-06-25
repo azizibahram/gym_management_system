@@ -1,16 +1,17 @@
-#!/usr/bin/env python
 import os
 import django
 
-# Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gymsystem.settings')
 django.setup()
 
 from django.contrib.auth.models import User
 
-# Create superuser if it doesn't exist
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@gym.com', 'admin')
-    print('Superuser created: admin/admin')
+username = os.environ.get('ADMIN_USERNAME', 'admin')
+email = os.environ.get('ADMIN_EMAIL', 'admin@gym.com')
+password = os.environ.get('ADMIN_PASSWORD', 'admin')
+
+if not User.objects.filter(username=username).exists():
+    User.objects.create_superuser(username, email, password)
+    print(f'Superuser created: {username}')
 else:
-    print('Superuser already exists')
+    print(f'Superuser already exists: {username}')

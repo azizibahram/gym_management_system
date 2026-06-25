@@ -1,7 +1,8 @@
 <div align="center">
 
-# 🏋️ Gym Management System (MIS)
+# Gym Management System (MIS)
 
+[![CI](https://github.com/azizibahram/energy_gym_mis/actions/workflows/ci.yml/badge.svg)](https://github.com/azizibahram/energy_gym_mis/actions/workflows/ci.yml)
 [![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Django](https://img.shields.io/badge/Django-5.2.10-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
@@ -17,7 +18,36 @@
 
 **A comprehensive Management Information System designed for modern gym operations**
 
-[Features](#-features) • [Demo](#-demo) • [Installation](#-installation) • [API](#-api-reference) • [Screenshots](#-screenshots)
+<p align="center">
+  <a href="#-features">Features</a> •
+  <a href="#-demo">Demo</a> •
+  <a href="#-screenshots">Screenshots</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-api-reference">API</a>
+</p>
+
+</div>
+
+---
+
+## 🖼️ Screenshots
+
+<div align="center">
+
+### Login & Dashboard
+<img src="./screenshots/login.png" alt="Login page" width="400"/>
+<img src="./screenshots/dashboard.png" alt="Dashboard with charts and stats" width="400"/>
+
+### Athlete Management
+<img src="./screenshots/athlete.png" alt="Athlete list" width="400"/>
+<img src="./screenshots/athlete-profile.png" alt="Athlete profile with payment history" width="400"/>
+<img src="./screenshots/create-athlete.png" alt="Create athlete form" width="400"/>
+
+### Locker Management
+<img src="./screenshots/shelves.png" alt="Locker management" width="400"/>
+
+### Account
+<img src="./screenshots/change-password.png" alt="Change password page" width="400"/>
 
 </div>
 
@@ -64,6 +94,17 @@ Energy Gym Management System is a full-stack web application that streamlines gy
 
 ---
 
+## 🎮 Demo
+
+A live demo is coming soon. In the meantime, you can run the project locally (see [Installation](#-installation)).
+
+To stay updated:
+- Star the repo
+- Watch for releases
+- Follow [@azizibahram](https://github.com/azizibahram)
+
+---
+
 ## 🚀 Installation
 
 ### Prerequisites
@@ -81,6 +122,12 @@ start_servers.bat
 This will start both backend and frontend servers simultaneously.
 
 ### 🔧 Manual Setup
+
+> **First time?** Copy `.env.example` to `.env` and adjust values:
+> ```bash
+> cp .env.example .env   # macOS/Linux
+> copy .env.example .env  # Windows
+> ```
 
 #### Backend Setup
 
@@ -225,7 +272,7 @@ Contributions are welcome! Please follow these steps:
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for more information.
 
 ---
 
