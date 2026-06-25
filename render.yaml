@@ -6,6 +6,7 @@ services:
       pip install -r backend/requirements.txt
       cd frontend && npm ci && npm run build && cd ..
       python backend/manage.py collectstatic --noinput
+    releaseCommand: python backend/manage.py migrate --noinput
     startCommand: cd backend && gunicorn gymsystem.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --threads 2
     envVars:
       - key: SECRET_KEY

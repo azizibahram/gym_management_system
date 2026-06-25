@@ -29,4 +29,7 @@ RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["gunicorn", "gymsystem.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2"]
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
