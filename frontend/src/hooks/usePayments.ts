@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { queryKeys } from '../config/queryClient';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = '/api';
 
 interface Payment {
   id: number;

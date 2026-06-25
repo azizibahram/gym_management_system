@@ -34,6 +34,9 @@
 
 <div align="center">
 
+### Demo Walkthrough
+<img src="./screenshots/demo.gif" alt="Demo walkthrough" width="800"/>
+
 ### Login & Dashboard
 <img src="./screenshots/login.png" alt="Login page" width="400"/>
 <img src="./screenshots/dashboard.png" alt="Dashboard with charts and stats" width="400"/>
@@ -96,12 +99,31 @@ Energy Gym Management System is a full-stack web application that streamlines gy
 
 ## 🎮 Demo
 
-A live demo is coming soon. In the meantime, you can run the project locally (see [Installation](#-installation)).
+A live demo is coming soon. In the meantime, you can run the project locally or with Docker:
 
-To stay updated:
-- Star the repo
-- Watch for releases
-- Follow [@azizibahram](https://github.com/azizibahram)
+### Docker (one command)
+```bash
+docker compose up
+```
+Then open http://localhost:8000.
+
+### Manual Setup
+See installation instructions below.
+
+---
+
+## 🐳 Docker
+
+```bash
+# Build and start
+docker compose up --build
+
+# Run migrations
+docker compose exec web python manage.py migrate
+
+# Create admin user
+docker compose exec web python manage.py createsuperuser
+```
 
 ---
 

@@ -54,7 +54,7 @@ const Dashboard: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const response = await axios.get('http://localhost:8000/api/dashboard/', {
+        const response = await axios.get('/api/dashboard/', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setData(response.data);
@@ -484,7 +484,7 @@ const Dashboard: React.FC = () => {
                                 <TableCell sx={{ py: 2.5 }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <Avatar
-                                      src={alert.photo ? `http://localhost:8000${alert.photo}` : undefined}
+                                      src={alert.photo ? alert.photo : undefined}
                                       sx={{
                                         width: 44,
                                         height: 44,

@@ -38,7 +38,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({ open, onClose }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:8000/api/change-password/', {
+      await axios.post('/api/change-password/', {
         old_password: oldPassword,
         new_password: newPassword
       }, {

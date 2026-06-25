@@ -120,7 +120,7 @@ const AthleteProfile: React.FC<AthleteProfileProps> = React.memo(({
             boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
           }}>
             <Avatar
-              src={athlete.photo ? (athlete.photo.startsWith('http') ? athlete.photo : `http://localhost:8000${athlete.photo}`) : undefined}
+              src={athlete.photo ? (athlete.photo.startsWith('http') ? athlete.photo : athlete.photo) : undefined}
               sx={{ width: 90, height: 90, mr: 3, border: '4px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
             />
             <Box sx={{ flex: 1 }}>

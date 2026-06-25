@@ -27,6 +27,15 @@ export default defineConfig({
       filename: 'dist/stats.html',
     }) as Plugin,
   ],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     // Code splitting configuration
     rollupOptions: {

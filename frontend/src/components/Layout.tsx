@@ -34,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const response = await axios.get('http://localhost:8000/api/dashboard/', {
+      const response = await axios.get('/api/dashboard/', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAlerts(response.data.alerts || []);
@@ -304,7 +304,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <MenuItem onClick={() => handleAlertClick(alert)} sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                   <Avatar
-                    src={alert.photo ? (alert.photo.startsWith('http') ? alert.photo : `http://localhost:8000${alert.photo}`) : undefined}
+                    src={alert.photo ? (alert.photo.startsWith('http') ? alert.photo : alert.photo) : undefined}
                     alt={alert.full_name}
                     sx={{ 
                       width: 44, 

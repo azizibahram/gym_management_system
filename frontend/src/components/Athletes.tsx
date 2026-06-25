@@ -234,7 +234,7 @@ const Athletes: React.FC = () => {
   const fetchShelves = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/shelves/', {
+      const response = await axios.get('/api/shelves/', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShelves(Array.isArray(response.data) ? response.data : (response.data.results || []));
@@ -335,7 +335,7 @@ const Athletes: React.FC = () => {
     }
 
     try {
-      await axios.put(`http://localhost:8000/api/athletes/${reassignAthlete.id}/`, data, {
+      await axios.put(`/api/athletes/${reassignAthlete.id}/`, data, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

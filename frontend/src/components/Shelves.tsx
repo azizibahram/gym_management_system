@@ -25,7 +25,7 @@ const Shelves: React.FC = () => {
   const fetchShelves = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/shelves/', {
+      const response = await axios.get('/api/shelves/', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShelves(Array.isArray(response.data) ? response.data : (response.data.results || []));
@@ -63,12 +63,12 @@ const Shelves: React.FC = () => {
     const token = localStorage.getItem('token');
     try {
       if (editing) {
-        await axios.put(`http://localhost:8000/api/shelves/${editing.id}/`, { shelf_number: shelfNumber }, {
+        await axios.put(`/api/shelves/${editing.id}/`, { shelf_number: shelfNumber }, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`Shelf "${shelfNumber}" updated successfully!`);
       } else {
-        await axios.post('http://localhost:8000/api/shelves/', { shelf_number: shelfNumber }, {
+        await axios.post('/api/shelves/', { shelf_number: shelfNumber }, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`Shelf "${shelfNumber}" created successfully!`);
@@ -85,7 +85,7 @@ const Shelves: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this shelf?')) {
       const token = localStorage.getItem('token');
       try {
-        await axios.delete(`http://localhost:8000/api/shelves/${id}/`, {
+        await axios.delete(`/api/shelves/${id}/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Shelf deleted successfully!');

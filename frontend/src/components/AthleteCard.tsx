@@ -76,7 +76,7 @@ const AthleteCard: React.FC<AthleteCardProps> = React.memo(({
   const athleteShelf = useMemo(() => shelf, [shelf?.id, athlete.shelf]);
 
   const photoUrl = athlete.photo
-    ? (athlete.photo.startsWith('http') ? athlete.photo : `http://localhost:8000${athlete.photo}`)
+    ? (athlete.photo.startsWith('http') ? athlete.photo : athlete.photo)
     : null;
 
   const accentColor = getStatusAccent(athlete.days_left, athlete.is_active);

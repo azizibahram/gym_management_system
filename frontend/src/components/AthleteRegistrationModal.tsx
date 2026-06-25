@@ -220,12 +220,12 @@ const AthleteRegistrationModal: React.FC<AthleteRegistrationModalProps> = React.
 
     try {
       if (editing) {
-        await axios.put(`http://localhost:8000/api/athletes/${editing.id}/`, data, {
+        await axios.put(`/api/athletes/${editing.id}/`, data, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`Athlete "${form.full_name}" updated successfully!`);
       } else {
-        await axios.post('http://localhost:8000/api/athletes/', data, {
+        await axios.post('/api/athletes/', data, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`Athlete "${form.full_name}" registered successfully!`);

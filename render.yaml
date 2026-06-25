@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: energy-gym-mis
+    env: python
+    buildCommand: |
+      pip install -r backend/requirements.txt
+      cd frontend && npm ci && npm run build && cd ..
+      python backend/manage.py collectstatic --noinput
+    startCommand: cd backend && gunicorn gymsystem.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --threads 2
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gym-db
+          property: connectionString
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "False"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://*.onrender.com"
+
+databases:
+  - name: gym-db
+    databaseName: gym_db
+    user: gym_user

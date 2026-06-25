@@ -30,7 +30,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     try {
-      const response = await axios.post('http://localhost:8000/api/token/', { username, password });
+      const response = await axios.post('/api/token/', { username, password });
       login(response.data.access, response.data.refresh);
       navigate('/');
     } catch (err) {
